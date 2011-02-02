@@ -1,5 +1,5 @@
 
-Redis Queue is an uber simple queueing system built on top of redis.
+Redis Queue is an uber simple (under 100sloc) queueing system built on top of redis.
 
 Queues are created when values are added to it. All input is serialised into JSON and stored and all output from the queue is also JSON.
 

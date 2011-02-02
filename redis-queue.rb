@@ -58,9 +58,9 @@ class RedisQueue
   # :queue: is the queue name
   def remove(queue)
     queue = NAMESPACE + queue.to_s + QUEUE_SUFFIX
-    b = @redis.rpop queue
-    v = @redis.get b
-    v || Yajl.dump(v)
+    key = @redis.rpop queue
+    value = @redis.get key
+    value || Yajl.dump(value)
   end
   
   # Find the size of a queue
