@@ -1,0 +1,13 @@
+
+Redis Queue is an uber simple queueing system built on top of redis.
+
+Queues are created when values are added to it. All input is serialised into JSON and stored and all output from the queue is also JSON.
+
+Dependencies:
+* Ruby
+* gem install redis SystemTimer yajl
+
+Performance:
+
+Not written for really high throughput, but see test/performance.rb.
+100,000 values stored and retrieved in 23s: ~8k/s read/write
