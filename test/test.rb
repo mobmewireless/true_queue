@@ -3,20 +3,24 @@ require '../redis-queue'
 
 queue = RedisQueue.new
 
-queue.add("set", "token")
 
-puts queue.add("hello", "world")
+#queue.add("orange", "scheduled at #{Time.now}", {'dequeue-timestamp' => Time.now + 5})
+#queue.add("blue", "scheduled at #{Time.now}", {'dequeue-timestamp' => Time.now + 5})
 puts queue.add("orange", "kongre")
 
-puts queue.size("hello")
-puts queue.size("orange")
 
-puts queue.remove("set")
-puts queue.remove("hello")
-puts queue.remove("hello")
-puts queue.remove("orange")
-
-puts queue.size("hello")
-puts queue.size("orange")
-
-puts queue.list_queues
+p "Orange"
+p queue.remove("orange")
+p queue.remove("orange")
+p queue.remove("orange")
+p queue.remove("orange")
+p
+p "Blue"
+p queue.remove("blue")
+p queue.remove("blue")
+p queue.remove("blue")
+p queue.remove("blue")
+p
+p queue.size("orange")
+p
+p queue.list_queues

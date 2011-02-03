@@ -7,6 +7,32 @@ Dependencies:
 * Ruby
 * gem install redis SystemTimer yajl
 
+Usage:
+
+# Connect
+redis_queue = RedisQueue.new
+
+# Simple add, the first paramter is the queue name, the second is the item to insert.
+# Queue names should be strings. Queues are created dynamically when referenced.
+# Items are arbitrary Ruby objects. They are stored as JSON values.
+redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' })
+
+# Items can also have arbitrary metadata. They are stored alongside items and returned on a dequeue. Metadata should be a hash.
+redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'importance' => low})
+
+# This is how you dequeue
+redis_queue.remove("publish")
+=> returns an array. The first element is the Ruby object in the queue, the second is the associated metadata.
+
+# Certain metadata have special meaning.
+# If you set a dequeue-timestamp to a Time object, the item will only be dequeued *after* that time
+# Note that it won't be dequeued exactly *at* the time, but at any time afterwards.
+# only dequeue 5s after queueing
+redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'dequeue-timestamp' => Time.now + 5 })
+
+# List available queues
+redis_queue.list_queues
+
 Performance:
 
 Not written for really high throughput, but see test/performance.rb.
