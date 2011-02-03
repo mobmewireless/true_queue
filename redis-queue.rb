@@ -15,11 +15,8 @@ class RedisQueue
   # The UUID suffix for keys that store values
   UUID_SUFFIX = ':uuid'
   
-  # The queue suffix for the list of all keys in a queue
+  # The sorted set suffix for the list of all keys in a queue
   QUEUE_SUFFIX = ':queue'
-  
-  # The scheduled sorted set suffix for the list of scheduled keys in a queue
-  SCHEDULED_SORTED_SET_SUFFIX = ':scheduled'
   
   # Initialises the RedisQueue
   #   options is a hash of all options to pass to the queue
@@ -49,22 +46,37 @@ class RedisQueue
   #   :metadata: is stored with the item and returned.
   #   :metadata['dequeue-timestamp'] => Time is treated specially. 
   #     An item with a dequeue-timestamp is only dequeued after this timestamp.
+  #   :metadata['priority'] => Integer is treated specially.
+  #     An item with a higher priority is dequeued first.
+  #
+  #   Note: dequeue-timestamp overrides any set priority.
   def add(queue_name, item, metadata = {})
     raise ArgumentError, "Metadata must be a hash, but #{metadata.class} given" unless metadata.is_a? Hash
     
+    if dequeue_timestamp = metadata['dequeue-timestamp']
+      unless dequeue_timestamp.is_a? Time
+        raise ArgumentError, "dequeue-timestamp must be an instance of Time, but #{dequeue_timestamp.class} given" 
+      end
+    end
+    
+    if priority = metadata['priority']
+      unless (priority.is_a? Integer) && priority.between?(1, 100)
+        raise ArgumentError, "priority must be an Integer between 1 and 100, but #{priority.class} given" 
+      end
+    end
+    
     queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
-    scheduled_sorted_set = NAMESPACE + queue_name.to_s + SCHEDULED_SORTED_SET_SUFFIX
     
     uuid = @redis.incr NAMESPACE + queue_name.to_s + UUID_SUFFIX 
     @redis.sadd QUEUESET, queue
     lkey = NAMESPACE + queue_name + ':' + uuid.to_s
     @redis.set lkey, Yajl.dump([item, metadata])
     
-    if metadata['dequeue-timestamp']
-      @redis.zadd scheduled_sorted_set, metadata['dequeue-timestamp'].to_i, lkey
-    else
-      @redis.lpush queue, lkey
-    end
+    # zadd adds to a sorted set, which is sorted by score.
+    # When set, the dequeue_timestamp is used as the score. If not, it's just the current timestamp.
+    # When set, current timestamp is divided by the integer priority.
+    score = (dequeue_timestamp && dequeue_timestamp.to_i) || (Time.now.to_i / (priority || 1))
+    @redis.zadd queue, score, lkey
     
     lkey
   end
@@ -73,31 +85,27 @@ class RedisQueue
   # :queue: is the queue name
   def remove(queue_name)
     queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
-    scheduled_sorted_set = NAMESPACE + queue_name.to_s + SCHEDULED_SORTED_SET_SUFFIX
     
-    # First check for any scheduled dequeues
-    key = (@redis.zrangebyscore scheduled_sorted_set, '-INF', Time.now.to_i, { :limit => [0, 1] }).first
+    # Remove the first item!
+    key = (@redis.zrangebyscore queue, "-inf", Time.now.to_i, {:limit => [0, 1]}).first
     if key
-      @redis.zrem scheduled_sorted_set, key
+      @redis.zrem queue, key
+      
+      value = @redis.get key
+      @redis.del key
+      json_value = value || Yajl.dump(value) #handle nil to null
+
+      Yajl.load(json_value)
+    else
+      nil
     end
-    
-    # Fallback to the normal queue  
-    key = @redis.rpop queue unless key
-    
-    value = @redis.get key
-    @redis.del key
-    json_value = value || Yajl.dump(value) #handle nil to null
-    
-    Yajl.load(json_value)
   end
   
   # Find the size of a queue
   # :queue: is the queue name
   def size(queue_name)
     queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
-    scheduled_sorted_set = NAMESPACE + queue_name.to_s + SCHEDULED_SORTED_SET_SUFFIX
     
-    length = (@redis.llen queue) + (@redis.zcount scheduled_sorted_set, '-inf', '+inf')
-    length
+    length = (@redis.zcount queue, '-inf', '+inf')
   end
 end

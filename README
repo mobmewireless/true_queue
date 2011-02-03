@@ -1,7 +1,7 @@
 
-Redis Queue is an uber simple (under 100sloc) queueing system built on top of redis.
+Redis Queue is an uber simple (under 100sloc) queueing system built on top of redis. Very simple, but it can both schedule and prioritise queued items.
 
-Queues are created when values are added to it. All input is serialised into JSON and stored and all output from the queue is also JSON.
+Queues are created when values are added to it. All input is serialised into JSON when stored and de-serialised when dequeued.
 
 Dependencies:
 * Ruby
@@ -12,23 +12,27 @@ Usage:
 # Connect
 redis_queue = RedisQueue.new
 
-# Simple add, the first paramter is the queue name, the second is the item to insert.
-# Queue names should be strings. Queues are created dynamically when referenced.
-# Items are arbitrary Ruby objects. They are stored as JSON values.
+# Add an item
 redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' })
 
-# Items can also have arbitrary metadata. They are stored alongside items and returned on a dequeue. Metadata should be a hash.
+Items can also have arbitrary metadata. They are stored alongside items and returned on a dequeue. 
+
+# metadata should be a hash.
 redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'importance' => low})
 
-# This is how you dequeue
-redis_queue.remove("publish")
-=> returns an array. The first element is the Ruby object in the queue, the second is the associated metadata.
+Certain metadata have special meaning. If you set a dequeue-timestamp to a Time object, the item will only be dequeued *after* that time. Note that it won't be dequeued exactly *at* the time, but at any time afterwards.
 
-# Certain metadata have special meaning.
-# If you set a dequeue-timestamp to a Time object, the item will only be dequeued *after* that time
-# Note that it won't be dequeued exactly *at* the time, but at any time afterwards.
 # only dequeue 5s after queueing
 redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'dequeue-timestamp' => Time.now + 5 })
+
+Another special metadata keyword is priority.
+
+# priority is an integer from 1 to 100. Higher priority items are dequeued first.
+redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'priority' => 5})
+
+# dequeue
+redis_queue.remove("publish")
+=> returns an array. The first element is the Ruby object in the queue, the second is the associated metadata.
 
 # List available queues
 redis_queue.list_queues
