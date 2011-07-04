@@ -37,7 +37,14 @@ class RedisQueue
 
   # List all queues in the RedisQueue
   def list_queues
-    @redis.smembers QUEUESET
+    list = @redis.smembers QUEUESET
+    name_list = []
+    list.map do |name|
+      if m = name.match(/^redis:queue:(.*):queue$/)
+        name_list << m.captures[0]
+      end
+    end
+    name_list
   end
 
   # Add a value to a queue
