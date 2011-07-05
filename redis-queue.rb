@@ -31,7 +31,7 @@ class RedisQueue
 
   # Connect to Redis
   # :options: is an option hash to pass to the Redis client as is
-  def connection(options)
+  def connect(options)
     @redis = options.delete(:connection)
     @redis ||= Redis.new(options)
   end
