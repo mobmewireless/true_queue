@@ -115,4 +115,19 @@ class RedisQueue
     queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
     length = (@redis.zcard queue)
   end
+
+  # CLear the queue
+  # :queue : name of the queue to be cleared.
+  def clear(queue_name)
+    queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
+    batch_size = 1_000 # keep this low as the time complexity of zrangebyscore is O(log(N)+M) : M -> the size
+    count = 0
+    (size(queue_name)/batch_size + 1).times do |i|
+      limit = [0 + (batch_size * i) , batch_size * (i + 1)]
+      keys = (@redis.zrangebyscore queue, "-inf", Time.now.to_i, {:limit => limit})
+      count += @redis.del keys.map { "%6s" }.join, *keys
+    end
+    @redis.del queue # a deleted queue is = empty queue ( the queue is still present in redis:queue:set)
+    count
+  end
 end
