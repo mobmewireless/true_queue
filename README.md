@@ -1,11 +1,13 @@
 
-Redis Queue is an uber simple (under 100sloc) queueing system built on top of redis. Very simple, but it can both schedule and prioritise queued items.
+Redis Queue is a simple (under 200sloc) but complete queueing system built on top of redis. It can both schedule and prioritise queued items.
 
-Queues are created when values are added to it. All input is serialised into JSON when stored and de-serialised when dequeued.
+Queues are created when values are added to it. All input is encoded into JSON when stored and decoded when dequeued.
 
-Dependencies:
-* Ruby
-* gem install redis SystemTimer yajl
+Install:
+$ bundle install --path vendor
+
+Spec:
+$ bundle exec guard
 
 Usage:
 
@@ -39,5 +41,5 @@ redis_queue.list_queues
 
 Performance:
 
-Not written for really high throughput, but see test/performance.rb.
-100,000 values stored and retrieved in 23s: ~8k/s read/write
+Not written for really high throughput, but see spec/performance.rb.
+200,000 values stored and retrieved in 106s: ~1.8k/s read/write

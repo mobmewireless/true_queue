@@ -9,3 +9,4 @@ SimpleCov.start do
 end if ENV["COVERAGE"]
 
 require 'mobme/infrastructure/redis_queue'
+require 'date'

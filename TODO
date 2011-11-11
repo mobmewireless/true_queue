@@ -1,6 +1,0 @@
-
-* Add a test suite using simple test/unit
-* info to inspect a queue
-* Delete a queue
-* Wrap queue remove in a transaction
-* Peek into the queue's first item without taking it

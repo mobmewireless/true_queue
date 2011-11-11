@@ -41,18 +41,6 @@ class MobME::Infrastructure::RedisQueue
     @redis ||= Redis.new(options)
   end
 
-  # List all queues in the RedisQueue
-  def list_queues
-    list = @redis.smembers QUEUESET
-    name_list = []
-    list.map do |name|
-      if m = name.match(/^redis:queue:(.*):queue$/)
-        name_list << m.captures[0]
-      end
-    end
-    name_list
-  end
-
   # Add a value to a queue
   #   :queue: is the queue name
   #   :item: is the item to add
@@ -134,5 +122,17 @@ class MobME::Infrastructure::RedisQueue
     end
     @redis.del queue # a deleted queue is = empty queue ( the queue is still present in redis:queue:set)
     count
+  end
+  
+  # List all queues in the RedisQueue
+  def list_queues
+    list = @redis.smembers QUEUESET
+    name_list = []
+    list.map do |name|
+      if m = name.match(/^redis:queue:(.*):queue$/)
+        name_list << m.captures[0]
+      end
+    end
+    name_list
   end
 end
