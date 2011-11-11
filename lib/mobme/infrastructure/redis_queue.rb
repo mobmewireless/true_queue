@@ -2,9 +2,14 @@
 require 'redis'
 require 'json'
 
+module MobME
+  module Infrastructure
+  end
+end
+
 # RedisQueue is a simple queueing system built on Redis
 # Adapted from: https://gist.github.com/616837 and restmq.com
-class RedisQueue
+class MobME::Infrastructure::RedisQueue
 
   # The namespace that all redis queue keys live inside Redis
   NAMESPACE = 'redis:queue:'
