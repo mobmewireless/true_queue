@@ -28,7 +28,7 @@ Certain metadata have special meaning. If you set a dequeue-timestamp to a Time 
 redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'dequeue-timestamp' => Time.now + 5 })
 
 Another special metadata keyword is priority.
-
+ 
 # priority is an integer from 1 to 100. Higher priority items are dequeued first.
 redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'priority' => 5})
 
