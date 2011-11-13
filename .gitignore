@@ -1,4 +1,5 @@
 vendor/
+doc/
 .bundle/
 coverage/
 spec/reports

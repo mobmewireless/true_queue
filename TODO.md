@@ -5,7 +5,7 @@ TODO:
 * Wrap queue remove in a transaction
 * Peek into the queue's first item without taking it
 * queue.remove should take a block that on error should put the item back (reserve a queue item)
-
+* improve performance to at least 10k/s read-write
 
 CHANGES:
 

@@ -12,6 +12,7 @@ group :development do
   gem "ci_reporter"
   gem "simplecov-rcov"
   gem "diff-lcs"
+  gem "rdiscount"
 end
 
 group :osx do

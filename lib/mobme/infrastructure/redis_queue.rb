@@ -8,7 +8,7 @@ module MobME
 end
 
 # RedisQueue is a simple queueing system built on Redis
-# Adapted from: https://gist.github.com/616837 and restmq.com
+# & adapted from RestMQ[http://restmq.com] and this gist[https://gist.github.com/616837]
 class MobME::Infrastructure::RedisQueue
 
   # The namespace that all redis queue keys live inside Redis
@@ -24,9 +24,8 @@ class MobME::Infrastructure::RedisQueue
   QUEUE_SUFFIX = ':queue'
 
   # Initialises the RedisQueue
-  #   options is a hash of all options to pass to the queue
-  #   options[:redis_options] is passed on to the underlying Redis client
-  #     and can take any Redis connect options hash.
+  # @param [Hash] options all options to pass to the queue
+  # @option options [Hash] :redis_options is passed on to the underlying Redis client
   def initialize(options = {})
     redis_options = options.delete(:redis_options) || {}
 
@@ -35,22 +34,19 @@ class MobME::Infrastructure::RedisQueue
   end
 
   # Connect to Redis
-  # :options: is an option hash to pass to the Redis client as is
+  # @param [Hash] options to pass to the Redis client as is
+  # @option options :connection Instead of making a new connection, the queue will reuse this existing Redis connection
   def connect(options)
     @redis = options.delete(:connection)
     @redis ||= Redis.new(options)
   end
 
   # Add a value to a queue
-  #   :queue: is the queue name
-  #   :item: is the item to add
-  #   :metadata: is stored with the item and returned.
-  #   :metadata['dequeue-timestamp'] => Time is treated specially.
-  #     An item with a dequeue-timestamp is only dequeued after this timestamp.
-  #   :metadata['priority'] => Integer is treated specially.
-  #     An item with a higher priority is dequeued first.
-  #
-  #   Note: dequeue-timestamp overrides any set priority.
+  # @param [String] queue_name The queue name to add to. 
+  # @param [Object] item is the item to add
+  # @param [Hash] metadata is stored with the item and returned.
+  # @option metadata [Time] dequeue-timestamp An item with a dequeue-timestamp is only dequeued after this timestamp.
+  # @option metadata [Integer] priority An item with a higher priority is dequeued first. Always between 1 and 100.
   def add(queue_name, item, metadata = {})
     raise ArgumentError, "Metadata must be a hash, but #{metadata.class} given" unless metadata.is_a? Hash
 
@@ -83,7 +79,7 @@ class MobME::Infrastructure::RedisQueue
   end
 
   # Remove an item from a queue
-  # :queue: is the queue name
+  # @param [String] queue_name is the queue name
   def remove(queue_name)
     queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
 
@@ -103,14 +99,14 @@ class MobME::Infrastructure::RedisQueue
   end
 
   # Find the size of a queue
-  # :queue: is the queue name
+  # @param [String] queue_name is the queue name
   def size(queue_name)
     queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
     length = (@redis.zcard queue)
   end
 
-  # CLear the queue
-  # :queue : name of the queue to be cleared.
+  # Clear the queue
+  # @param [String] queue_name is the queue name to clear
   def clear(queue_name)
     queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
     batch_size = 1_000 # keep this low as the time complexity of zrangebyscore is O(log(N)+M) : M -> the size
@@ -124,7 +120,7 @@ class MobME::Infrastructure::RedisQueue
     count
   end
   
-  # List all queues in the RedisQueue
+  # List all queues
   def list_queues
     list = @redis.smembers QUEUESET
     name_list = []

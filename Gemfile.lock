@@ -22,6 +22,7 @@ GEM
     rb-fsevent (0.4.3.1)
     rb-inotify (0.8.8)
       ffi (>= 0.5.0)
+    rdiscount (1.6.8)
     redis (2.2.2)
     rspec (2.7.0)
       rspec-core (~> 2.7.0)
@@ -58,6 +59,7 @@ DEPENDENCIES
   rake
   rb-fsevent
   rb-inotify
+  rdiscount
   redis (~> 2.2.0)
   rspec
   simplecov
