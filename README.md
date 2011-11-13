@@ -48,9 +48,27 @@ Items with priority set (or a higher priority) are always dequeued first.
     # dequeue
     redis_queue.remove("publish")
     
-remove returns an array. The first element is the Ruby object in the queue, the second is the associated metadata (always a Hash).
+\#remove returns an array. The first element is the Ruby object in the queue, the second is the associated metadata (always a Hash).
 
     => {:jobid => 23, :url => 'http://example.com/' }, {'priority' => 5}
+    
+\#remove also can take a block. This is the recommended way to remove an item from a queue.
+
+    # dequeue into a block
+    redis_queue.remove do |item|
+      #process item
+      ...
+    end
+    
+When a block is passed, RedisQueue ensures that the item is put back in case of an error within the block.
+
+Inside a block, you can also manually raise {MobME::Infrastructure::RedisQueueRemoveAbort} to put back the item:
+
+    # dequeue into a block
+    redis_queue.remove do |item|
+      #this item will be put back
+      raise MobME::Infrastructure::RedisQueueRemoveAbort
+    end
 
 ### List available queues
 
@@ -58,6 +76,19 @@ remove returns an array. The first element is the Ruby object in the queue, the 
 
 Returns an array of all queues stored in the Redis instance.
 
+### Remove queues
+
+This empties and removes all queues:
+
+    redis_queue.remove_queues
+
+To selectively remove queues:
+
+    redis_queue.remove_queue "queue1"
+    redis_queue.remove_queues "queue1", "queue2"
+
 ## Performance
 
-Redis-queue is not written for really high throughput, but see spec/performance.rb. An indicative value is around 200,000 values stored and retrieved in 106s: ~1.8k/s read/write
+Redis-queue is not written for really high throughput, but see spec/performance.rb. An indicative value is around 200,000 values stored and retrieved in 92s: ~2.1k/s read/write
+
+# {include:file:TODO.md}
