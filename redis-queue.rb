@@ -33,7 +33,7 @@ class RedisQueue
   # :options: is an option hash to pass to the Redis client as is
   def connect(options)
     $redis ||= options.delete(:connection)
-    $redis ||= Redis.new(options)
+    $redis ||= Redis.new(options.merge(:thread_safe => true))
   end
 
   # List all queues in the RedisQueue
