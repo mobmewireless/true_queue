@@ -32,13 +32,13 @@ class RedisQueue
   # Connect to Redis
   # :options: is an option hash to pass to the Redis client as is
   def connect(options)
-    @redis = options.delete(:connection)
-    @redis ||= Redis.new(options)
+    $redis ||= options.delete(:connection)
+    $redis ||= Redis.new(options)
   end
 
   # List all queues in the RedisQueue
   def list_queues
-    list = @redis.smembers QUEUESET
+    list = $redis.smembers QUEUESET
     name_list = []
     list.map do |name|
       if m = name.match(/^redis:queue:(.*):queue$/)
@@ -75,16 +75,16 @@ class RedisQueue
 
     queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
 
-    uuid = @redis.incr NAMESPACE + queue_name.to_s + UUID_SUFFIX
-    @redis.sadd QUEUESET, queue
+    uuid = $redis.incr NAMESPACE + queue_name.to_s + UUID_SUFFIX
+    $redis.sadd QUEUESET, queue
     lkey = NAMESPACE + queue_name + ':' + uuid.to_s
-    @redis.set lkey, JSON::dump([item, metadata])
+    $redis.set lkey, JSON::dump([item, metadata])
 
     # zadd adds to a sorted set, which is sorted by score.
     # When set, the dequeue_timestamp is used as the score. If not, it's just the current timestamp.
     # When set, current timestamp is divided by the integer priority.
     score = (dequeue_timestamp && dequeue_timestamp.to_i) || (Time.now.to_i / (priority || 1))
-    @redis.zadd queue, score, lkey
+    $redis.zadd queue, score, lkey
 
     lkey
   end
@@ -95,12 +95,12 @@ class RedisQueue
     queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
 
     # Remove the first item!
-    key = (@redis.zrangebyscore queue, "-inf", Time.now.to_i, {:limit => [0, 1]}).first
+    key = ($redis.zrangebyscore queue, "-inf", Time.now.to_i, {:limit => [0, 1]}).first
     if key
-      @redis.zrem queue, key
+      $redis.zrem queue, key
 
-      value = @redis.get key
-      @redis.del key
+      value = $redis.get key
+      $redis.del key
       json_value = value || JSON::dump(value) #handle nil to null
 
       JSON::load(json_value)
@@ -113,7 +113,7 @@ class RedisQueue
   # :queue: is the queue name
   def size(queue_name)
     queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
-    length = (@redis.zcard queue)
+    length = ($redis.zcard queue)
   end
 
   # CLear the queue
@@ -124,10 +124,10 @@ class RedisQueue
     count = 0
     (size(queue_name)/batch_size + 1).times do |i|
       limit = [0 + (batch_size * i) , batch_size * (i + 1)]
-      keys = (@redis.zrangebyscore queue, "-inf", Time.now.to_i, {:limit => limit})
-      count += @redis.del keys.map { "%6s" }.join, *keys
+      keys = ($redis.zrangebyscore queue, "-inf", Time.now.to_i, {:limit => limit})
+      count += $redis.del keys.map { "%6s" }.join, *keys
     end
-    @redis.del queue # a deleted queue is = empty queue ( the queue is still present in redis:queue:set)
+    $redis.del queue # a deleted queue is = empty queue ( the queue is still present in redis:queue:set)
     count
   end
 end
