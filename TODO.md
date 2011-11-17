@@ -6,6 +6,10 @@
 
 ## CHANGES
 
+### 20111118 (vishnu@mobme.in)
+* Store values inside small key-ed hashes for maximum memory efficiency.
+* Major reorganization, making everything far more modular & simple.
+
 ### 20111113 (vishnu@mobme.in)
 * Initial documentation in Yardoc style.
 * Adding #delete_queue(s) to clear & delete any and all queues permanently

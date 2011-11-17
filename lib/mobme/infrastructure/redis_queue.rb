@@ -27,6 +27,9 @@ class MobME::Infrastructure::RedisQueue
 
   # The sorted set suffix for the list of all keys in a queue
   QUEUE_SUFFIX = ':queue'
+  
+  # The hash suffix for the hash that stores values of a queue
+  VALUE_SUFFIX = ':values'
 
   # Initialises the RedisQueue
   # @param [Hash] options all options to pass to the queue
@@ -53,22 +56,17 @@ class MobME::Infrastructure::RedisQueue
   # @option metadata [Time] dequeue-timestamp An item with a dequeue-timestamp is only dequeued after this timestamp.
   # @option metadata [Integer] priority An item with a higher priority is dequeued first. Always between 1 and 100.
   # @return [String] A unique key in the queue name where the item is set.
-  def add(queue_name, item, metadata = {})
+  def add(queue, item, metadata = {})
     raise ArgumentError, "Metadata must be a hash, but #{metadata.class} given" unless metadata.is_a? Hash
 
     dequeue_timestamp, priority = extract_options_from_metadata(metadata)
-
+    uuid = generate_uuid(queue)
     
-    add_to_queueset(queue_name)
-    uuid = generate_uuid(queue_name)
+    add_to_queueset(queue)
+    add_to_queue(queue, uuid, dequeue_timestamp, priority)
+    write_value(queue, uuid, item, metadata)
     
-    lkey = NAMESPACE + queue_name + ':' + uuid.to_s
-    queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
-    
-    write_value(lkey, item, metadata)
-    add_to_queue(queue, lkey, dequeue_timestamp, priority)
-    
-    lkey
+    uuid
   end
 
   # Remove an item from a queue.
@@ -78,35 +76,33 @@ class MobME::Infrastructure::RedisQueue
   # @param [String] queue_name is the queue name
   # @yield [[Object, Hash]] An optional block that is passed the item being remove alongside metadata.
   # @return [[Object, Hash]] The item plus the metadata in the queue
-  def remove(queue_name, &block)
+  def remove(queue, &block)
     begin
-      queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
-
       # Remove the first item!
-      lkey = first_in_queue(queue)
-      if lkey
+      uuid = first_in_queue(queue)
+      if uuid
         # If we're not able to remove the key from the set here, it means that
         # some other thread (or evented operation) has done it before us, so
         # the current remove is invalid and we should retry!
-        raise MobME::Infrastructure::RedisQueueRemoveConflictException unless remove_from_queue(queue, lkey)
+        raise MobME::Infrastructure::RedisQueueRemoveConflictException unless remove_from_queue(queue, uuid)
       
-        queue_item = read_value(lkey)
+        queue_item = read_value(queue, uuid)
         
         # When a block is given, safely reserve the queue item
         if block_given?
           begin
             block.call(queue_item)
-            remove_value(lkey)
+            remove_value(queue, uuid)
           rescue #generic error
-            put_back_in_queue(queue, lkey, queue_item)
+            put_back_in_queue(queue, uuid, queue_item)
             
             # And now re-raise the error
             raise
           rescue MobME::Infrastructure::RedisQueueRemoveAbort
-            put_back_in_queue(queue, lkey, queue_item)
+            put_back_in_queue(queue, uuid, queue_item)
           end
         else
-          remove_value(lkey)
+          remove_value(queue, uuid)
           queue_item
         end
       else
@@ -120,32 +116,30 @@ class MobME::Infrastructure::RedisQueue
   # Peek into the first item in a queue without removing it
   # @param [String] queue_name is the queue name
   # @return [[Object, Hash]] The item plus the metadata in the queue
-  def peek(queue_name)
-    queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
-    lkey = first_in_queue(queue)
-    read_value(lkey)
+  def peek(queue)
+    uuid = first_in_queue(queue)
+    read_value(queue, uuid)
   end
 
   # Find the size of a queue
   # @param [String] queue_name is the queue name
   # @return [Integer] The size of the queue
-  def size(queue_name)
-    queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
+  def size(queue)
+    queue = NAMESPACE + queue.to_s + QUEUE_SUFFIX
     length = (@redis.zcard queue)
   end
   
   # Lists all items in the queue. This is an expensive operation
   # @param [String] queue_name is the queue name
   # @return [Array<Object, Hash>] An array of list items, the first element the object stored and the second, metadata
-  def list(queue_name)
-    queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
+  def list(queue)
     batch_size = 1_000 # keep this low as the time complexity of zrangebyscore is O(log(N)+M) : M -> the size
     
     count = 0; values = []
-    (size(queue_name)/batch_size + 1).times do |i|
+    (size(queue)/batch_size + 1).times do |i|
       limit = [(batch_size * i), batch_size]
-      lkeys = (@redis.zrangebyscore queue, "-inf", Time.now.to_i, {:limit => limit})
-      batch_values = lkeys.map { |lkey| read_value(lkey) }
+      uuids = range_in_queue(queue, limit)
+      batch_values = uuids.map { |uuid| read_value(queue, uuid) }
       values.push(*batch_values)
     end
     
@@ -154,31 +148,16 @@ class MobME::Infrastructure::RedisQueue
 
   # Clear the queue
   # @param [String] queue_name is the queue name to clear
-  # @return [Integer] The count of items cleared.
-  def empty(queue_name)
-    queue = NAMESPACE + queue_name.to_s + QUEUE_SUFFIX
-    batch_size = 1_000 # keep this low as the time complexity of zrangebyscore is O(log(N)+M) : M -> the size
-    count = 0
-    (size(queue_name)/batch_size + 1).times do |i|
-      limit = [(batch_size * i), batch_size]
-      keys = (@redis.zrangebyscore queue, "-inf", Time.now.to_i, {:limit => limit})
-      count += @redis.del keys.map { "%6s" }.join, *keys
-    end
-    @redis.del queue # a deleted queue is = empty queue ( the queue is still present in the QUEUESET)
-    count
+  def empty(queue)
+    # Delete key and value stores.
+    @redis.del "#{NAMESPACE}#{queue}#{VALUE_SUFFIX}"
+    @redis.del "#{NAMESPACE}#{queue}#{QUEUE_SUFFIX}"
   end
   
   # List all queues
   # @return [Array] A list of queues (includes empty queues that were once available)
   def list_queues
-    list = @redis.smembers QUEUESET
-    name_list = []
-    list.map do |name|
-      if m = name.match(/^#{NAMESPACE}(.*)#{QUEUE_SUFFIX}$/)
-        name_list << m.captures[0]
-      end
-    end
-    name_list
+    @redis.smembers QUEUESET
   end
   
   # Delete queues
@@ -187,7 +166,6 @@ class MobME::Infrastructure::RedisQueue
     queues = list_queues if queues.empty?
     queues.each do |queue_name|
       empty(queue_name)
-      delete_queue(queue_name)
       remove_from_queueset(queue_name)
     end
   end
@@ -195,49 +173,55 @@ class MobME::Infrastructure::RedisQueue
   
   private
   def add_to_queueset(queue)
-    queue = NAMESPACE + queue.to_s + QUEUE_SUFFIX
     @redis.sadd QUEUESET, queue
   end
   
   def remove_from_queueset(queue)
-    queue = NAMESPACE + queue.to_s + QUEUE_SUFFIX
     @redis.srem QUEUESET, queue
   end
   
   def first_in_queue(queue)
+    queue = NAMESPACE + queue.to_s + QUEUE_SUFFIX
     (@redis.zrangebyscore queue, "-inf", Time.now.to_i, {:limit => [0, 1]}).first
   end
   
-  def add_to_queue(queue, lkey, dequeue_timestamp, priority)
+  def range_in_queue(queue, limit)
+    queue = NAMESPACE + queue.to_s + QUEUE_SUFFIX
+    (@redis.zrangebyscore queue, "-inf", Time.now.to_i, {:limit => limit})
+  end
+  
+  def add_to_queue(queue, uuid, dequeue_timestamp, priority)
     # zadd adds to a sorted set, which is sorted by score.
     # When set, the dequeue_timestamp is used as the score. If not, it's just the current timestamp.
-    # When set, current timestamp is divided by the integer priority.
+    # When set, current timestamp is divided by the integer priority.    
+    queue = NAMESPACE + queue.to_s + QUEUE_SUFFIX
     score = (dequeue_timestamp && dequeue_timestamp.to_i) || (Time.now.to_i / (priority || 1))
-    @redis.zadd queue, score, lkey
+    @redis.zadd queue, score, uuid
   end
   
-  def remove_from_queue(queue, lkey)
-    (@redis.zrem queue, lkey)
+  def remove_from_queue(queue, uuid)
+    queue = NAMESPACE + queue.to_s + QUEUE_SUFFIX
+    (@redis.zrem queue, uuid)
   end
   
-  def put_back_in_queue(queue, lkey, queue_item)
+  def put_back_in_queue(queue, uuid, queue_item)
     # Put the item back in the queue
     metadata = queue_item[1]
     dequeue_timestamp, priority = extract_options_from_metadata(metadata)
-    add_to_queue(queue, lkey, dequeue_timestamp, priority)
+    add_to_queue(queue, uuid, dequeue_timestamp, priority)
   end
   
-  def delete_queue(queue)
-    @redis.srem QUEUESET, "#{NAMESPACE}#{queue}#{QUEUE_SUFFIX}"
+  def write_value(queue, uuid, item, metadata)
+    value_hash = "#{NAMESPACE}#{queue}#{VALUE_SUFFIX}"
+    
+    @redis.hset value_hash, uuid, Yajl.dump([item, metadata])
   end
   
-  def write_value(lkey, item, metadata)
-    @redis.set lkey, Yajl.dump([item, metadata])
-  end
-  
-  def read_value(lkey)
-    if lkey
-      value = @redis.get lkey
+  def read_value(queue, uuid)
+    if uuid
+      value_hash = "#{NAMESPACE}#{queue}#{VALUE_SUFFIX}"
+      
+      value = @redis.hget value_hash, uuid
       json_value = value || Yajl.dump(value) #handle nil to null
 
       Yajl.load(json_value)
@@ -246,8 +230,10 @@ class MobME::Infrastructure::RedisQueue
     end
   end
   
-  def remove_value(lkey)
-    @redis.del lkey
+  def remove_value(queue, uuid)
+    value_hash = "#{NAMESPACE}#{queue}#{VALUE_SUFFIX}"
+    
+    @redis.hdel value_hash, uuid
   end
   
   def generate_uuid(queue)

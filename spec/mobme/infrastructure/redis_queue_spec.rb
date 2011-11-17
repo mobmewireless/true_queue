@@ -44,6 +44,10 @@ describe MobME::Infrastructure::RedisQueue do
       (queue.remove "queue").should == [1, {}]
     end
     
+    it "should remove nil from an empty queue" do
+      (queue.remove "queue").should == nil
+    end
+    
     it "can remove a complex value from the queue" do
       queue.add "queue", Time.now
       

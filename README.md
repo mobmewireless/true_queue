@@ -93,8 +93,12 @@ To selectively remove queues:
     redis_queue.remove_queue "queue1"
     redis_queue.remove_queues "queue1", "queue2"
 
-## Performance
+## Performance & Memory Usage
 
-Redis-queue is not written for really high throughput, but see spec/performance.rb. An indicative value is around 200,000 values stored and retrieved in 92s: ~2.1k/s read/write
+Redis-queue is not written for really high throughput, but see spec/performance.rb. 
+
+An indicative value is around 200,000 values stored and retrieved in 89s: ~2.2k/s read/write. 
+
+It's also reasonably memory efficient because it uses hashes instead of plain strings to store values. 200,000 values used 20MB (with each value 10 bytes).
 
 # {include:file:TODO.md}
