@@ -2,6 +2,7 @@
 ## TODO
 * improve performance to at least 10k/s read-write
 * selectively tweak a queue (remove or edit items with a specified lkey from a queue)
+* write implementation tests and split tests into behavior and implementation.
 
 ## CHANGES
 

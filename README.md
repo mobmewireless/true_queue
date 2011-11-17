@@ -69,6 +69,12 @@ Inside a block, you can also manually raise {MobME::Infrastructure::RedisQueueRe
       #this item will be put back
       raise MobME::Infrastructure::RedisQueueRemoveAbort
     end
+    
+### List all items in a queue
+
+This is an expensive operation, but at times, very useful!
+
+    redis_queue.list
 
 ### List available queues
 
