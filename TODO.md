@@ -1,11 +1,21 @@
 
 ## TODO
 * improve performance to at least 10k/s read-write
-  * Implement an in-memory queue object that backs up to the Redis implementation deferred via ØMQ.
+  * Implement an in-memory queue
+  * Use: 
+    https://github.com/kanwei/algorithms/blob/master/spec/rb\_tree_map_spec.rb
+    for the in-memory sorted RB array that backs the queue
+  * Defer updates to Redis backend via a ØMQ socket
 * selectively tweak a queue (remove or edit items with a specified lkey from a queue)
 * write implementation tests and split tests into behavior and implementation.
 
 ## CHANGES
+
+### 20111128 (vishnu@mobme.in)
+* Modularizing the code so that we can now use multiple backends.
+* A memory based queue backend based on a C red-black tree implementation.
+* BREAKING. Queues are now created using:
+    MobME::Infrastructure::RedisQueue.queue(backend) where backend is either one of :memory or :redis now.
 
 ### 20111118 (vishnu@mobme.in)
 * Store values inside small key-ed hashes for maximum memory efficiency.

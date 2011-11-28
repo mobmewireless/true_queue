@@ -21,7 +21,15 @@ Ruby version 1.9.2
 
 ### Connect
 
-    redis_queue = RedisQueue.new
+For the in-memory backend that only stores keys within a process space,
+
+    redis_queue = MobME::Infrastructure::RedisQueue.queue(:memory)
+
+& for the redis backend,
+
+    redis_queue = MobME::Infrastructure::RedisQueue.queue(:redis)
+    
+Both have exactly the same public interfaces.
 
 ### Add an item
 
@@ -67,7 +75,7 @@ Inside a block, you can also manually raise {MobME::Infrastructure::RedisQueueRe
     # dequeue into a block
     redis_queue.remove do |item|
       #this item will be put back
-      raise MobME::Infrastructure::RedisQueueRemoveAbort
+      raise MobME::Infrastructure::RedisQueue::RemoveAbort
     end
     
 ### List all items in a queue
@@ -95,10 +103,18 @@ To selectively remove queues:
 
 ## Performance & Memory Usage
 
-Redis-queue is not written for really high throughput, but see spec/performance.rb. 
+See detailed analysis in spec/performance.
+
+### The Redis Backend
 
 An indicative value is around 200,000 values stored and retrieved in 89s: ~2.2k/s read/write. 
 
 It's also reasonably memory efficient because it uses hashes instead of plain strings to store values. 200,000 values used 20MB (with each value 10 bytes).
+
+### The Memory Backend
+
+The memory backend only stores keys within the process space. This is a major limitation currently.
+
+But performance is *very* good. It does 200,000 read/write in around 5s, which is ~40K/s read/write.
 
 # {include:file:TODO.md}

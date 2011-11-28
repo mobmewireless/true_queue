@@ -1,5 +1,5 @@
 
-class MobME::Infrastructure::RedisQueue::Redis
+class MobME::Infrastructure::RedisQueue::Redis < MobME::Infrastructure::RedisQueue::Backend
 
   # The namespace that all redis queue keys live inside Redis
   NAMESPACE = 'redis:queue:'
@@ -167,21 +167,20 @@ class MobME::Infrastructure::RedisQueue::Redis
   
   def first_in_queue(queue)
     queue = NAMESPACE + queue.to_s + QUEUE_SUFFIX
-    (@redis.zrangebyscore queue, "-inf", Time.now.to_i, {:limit => [0, 1]}).first
+    (@redis.zrangebyscore queue, "-inf", (Time.now.to_f * 1000000).to_i, {:limit => [0, 1]}).first
   end
   
   def range_in_queue(queue, limit)
     queue = NAMESPACE + queue.to_s + QUEUE_SUFFIX
-    (@redis.zrangebyscore queue, "-inf", Time.now.to_i, {:limit => limit})
+    (@redis.zrangebyscore queue, "-inf", (Time.now.to_f * 1000000).to_i, {:limit => limit})
   end
   
   def add_to_queue(queue, uuid, dequeue_timestamp, priority)
     # zadd adds to a sorted set, which is sorted by score.
     # When set, the dequeue_timestamp is used as the score. If not, it's just the current timestamp.
     # When set, current timestamp is divided by the integer priority.    
-    queue = NAMESPACE + queue.to_s + QUEUE_SUFFIX
-    score = (dequeue_timestamp && dequeue_timestamp.to_i) || (Time.now.to_i / (priority || 1))
-    @redis.zadd queue, score, uuid
+    queue = NAMESPACE + queue.to_s + QUEUE_SUFFIX 
+    @redis.zadd queue, score_from_metadata(dequeue_timestamp, priority), uuid
   end
   
   def remove_from_queue(queue, uuid)
@@ -199,7 +198,7 @@ class MobME::Infrastructure::RedisQueue::Redis
   def write_value(queue, uuid, item, metadata)
     value_hash = "#{NAMESPACE}#{queue}#{VALUE_SUFFIX}"
     
-    @redis.hset value_hash, uuid, Yajl.dump([item, metadata])
+    @redis.hset value_hash, uuid, serialize_item(item, metadata)
   end
   
   def read_value(queue, uuid)
@@ -207,9 +206,7 @@ class MobME::Infrastructure::RedisQueue::Redis
       value_hash = "#{NAMESPACE}#{queue}#{VALUE_SUFFIX}"
       
       value = @redis.hget value_hash, uuid
-      json_value = value || Yajl.dump(value) #handle nil to null
-
-      Yajl.load(json_value)
+      unserialize_item(value)
     else
       nil
     end
@@ -223,21 +220,5 @@ class MobME::Infrastructure::RedisQueue::Redis
   
   def generate_uuid(queue)
     @redis.incr NAMESPACE + queue.to_s + UUID_SUFFIX
-  end
-  
-  def extract_options_from_metadata(metadata)
-    if dequeue_timestamp = metadata['dequeue-timestamp']
-      unless dequeue_timestamp.is_a? Time
-        raise ArgumentError, "dequeue-timestamp must be an instance of Time, but #{dequeue_timestamp.class} given"
-      end
-    end
-
-    if priority = metadata['priority']
-      unless (priority.is_a? Integer) && priority.between?(1, 100)
-        raise ArgumentError, "priority must be an Integer between 1 and 100, but #{priority.class} given"
-      end
-    end
-    
-    [dequeue_timestamp, priority]
   end
 end
