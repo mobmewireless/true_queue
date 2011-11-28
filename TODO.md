@@ -1,11 +1,6 @@
 
 ## TODO
-* improve performance to at least 10k/s read-write
-  * Implement an in-memory queue
-  * Use: 
-    https://github.com/kanwei/algorithms/blob/master/spec/rb\_tree_map_spec.rb
-    for the in-memory sorted RB array that backs the queue
-  * Defer updates to Redis backend via a ØMQ socket
+* Write a ØMQ and eventmachine based message queue to persist in Redis in the background too.
 * selectively tweak a queue (remove or edit items with a specified lkey from a queue)
 * write implementation tests and split tests into behavior and implementation.
 
