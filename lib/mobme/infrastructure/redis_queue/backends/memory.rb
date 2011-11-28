@@ -1,7 +1,7 @@
 
 require "algorithms"
 
-class MobME::Infrastructure::RedisQueue::Memory < MobME::Infrastructure::RedisQueue::Backend
+class MobME::Infrastructure::RedisQueue::Backends::Memory < MobME::Infrastructure::RedisQueue::Backend
   attr_accessor :scores, :queues
 
   # Initialises the RedisQueue

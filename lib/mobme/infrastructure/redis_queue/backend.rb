@@ -1,4 +1,9 @@
 
+module MobME::Infrastructure::RedisQueue
+  module Backends
+  end
+end
+
 class MobME::Infrastructure::RedisQueue::Backend
 
 protected

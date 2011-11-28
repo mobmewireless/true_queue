@@ -1,5 +1,5 @@
 
-class MobME::Infrastructure::RedisQueue::Redis < MobME::Infrastructure::RedisQueue::Backend
+class MobME::Infrastructure::RedisQueue::Backends::Redis < MobME::Infrastructure::RedisQueue::Backend
 
   # The namespace that all redis queue keys live inside Redis
   NAMESPACE = 'redis:queue:'
