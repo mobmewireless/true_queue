@@ -1,57 +1,70 @@
 
 require 'em-zeromq'
 require 'em-synchrony'
-
-class EM::Protocols::ZMQConnectionHandler
-  attr_reader :received
-
-  def initialize(connection)
-    @connection = connection
-    @client_fiber = Fiber.current
-    @connection.setsockopt(ZMQ::IDENTITY, "req-#{@client_fiber.object_id}")
-    @connection.handler = self
-  end
-  
-  def recv_msg
-    @connection.register_readable
-    messages = Fiber.yield
-    messages.map(&:copy_out_string)
-  end
-
-  def send_msg(*parts)
-    puts "Sending"
-    queued = @connection.send_msg(*parts)
-    @connection.register_readable
-    puts "Yielding"
-    messages = Fiber.yield
-    messages.map(&:copy_out_string)
-  end
-
-  def on_readable(socket, messages)
-    puts "Readable"
-    @client_fiber.resume(messages)
-  end
-end
+require 'mobme/infrastructure/redis_queue/zeromq/connection_handler'
 
 class MobME::Infrastructure::RedisQueue::Backends::ZeroMQ < MobME::Infrastructure::RedisQueue::Backend
-  def initialize(options)
-    @socket = options[:socket] || "tcp://127.0.0.1:6091"
+  def initialize(options = {})
+    @socket = options[:socket] || "ipc:///tmp/redis-queue.sock"
     connect
   end
   
   def connect
-    context = EM::ZeroMQ::Context.new(1)
+    @context = EM::ZeroMQ::Context.new(1)
     @pool = EM::Synchrony::ConnectionPool.new(:size => 20) do
-      context.connect(ZMQ::REQ, @socket)
+      @context.connect(ZMQ::REQ, @socket)
     end
   end
   
   def add(queue, item, metadata = {})
-    puts "Adding"
-    @pool.execute(false) do |conn|
-      handler = EM::Protocols::ZMQConnectionHandler.new(conn)
-      resp = handler.send_msg("HELLO").first
-      [200, {}, resp]
+    dispatch(:add, queue, item, metadata)
+  end
+  
+  # Adds many items together
+  def add_bulk(queue, items = [])
+    dispatch(:add_bulk, queue, items)
+  end
+  
+  # Simple remove without reserving items
+  def remove(queue)
+    dispatch(:remove, queue)
+  end
+  
+  def peek(queue)
+    dispatch(:peek, queue)
+  end
+  
+  def size(queue)
+    dispatch(:size, queue)
+  end
+  
+  def list(queue)
+    dispatch(:list, queue)
+  end
+  
+  def empty(queue)
+    dispatch(:empty, queue)
+  end
+  
+  def list_queues
+    dispatch(:list_queues)
+  end
+  
+  def remove_queues(*queues)
+    dispatch(:remove_queues, *queues)
+  end
+  alias :remove_queue :remove_queues
+  
+  private
+  def dispatch(method, *args)
+    @pool.execute(false) do |connection|
+      handler = MobME::Infrastructure::RedisQueue::ZeroMQ::ConnectionHandler.new(connection)
+    
+      message = Marshal.dump([method, args])
+    
+      handler.send_message(message)
+      
+      Marshal.load(handler.receive_message)
     end
   end
 end

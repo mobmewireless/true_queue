@@ -25,11 +25,15 @@ For the in-memory backend that only stores keys within a process space,
 
     redis_queue = MobME::Infrastructure::RedisQueue.queue(:memory)
 
-& for the redis backend,
+For the redis backend,
 
     redis_queue = MobME::Infrastructure::RedisQueue.queue(:redis)
     
-Both have exactly the same public interfaces.
+& for the zeromq backend,
+  
+    redis_queue = MobME::Infrastructure::RedisQueue.queue(:zeromq)
+    
+All three have exactly the same public interfaces.
 
 ### Add an item
 
@@ -78,6 +82,8 @@ Inside a block, you can also manually raise {MobME::Infrastructure::RedisQueueRe
       raise MobME::Infrastructure::RedisQueue::RemoveAbort
     end
     
+Note: you cannot pass in a block using the zeromq type of queue.
+    
 ### List all items in a queue
 
 This is an expensive operation, but at times, very useful!
@@ -107,14 +113,25 @@ See detailed analysis in spec/performance.
 
 ### The Redis Backend
 
-An indicative value is around 200,000 values stored and retrieved in 89s: ~2.2k/s read/write. 
+An indicative add performance is around 100,000 values stored in 20s: 5K/s write.
+
+An indicative normal workflow performance is 200,000 values stored and retrieved in 1 minute: ~3K/s read-write
 
 It's also reasonably memory efficient because it uses hashes instead of plain strings to store values. 200,000 values used 20MB (with each value 10 bytes).
 
 ### The Memory Backend
 
-The memory backend only stores keys within the process space. This is a major limitation currently.
+The memory backend only stores keys within the process space.
 
 But performance is *very* good. It does 200,000 read/write in around 5s, which is ~40K/s read/write.
+
+### The ZeroMQ Backend
+
+The zeromq backend is currently experimental. It's meant to do these things:
+
+* Very fast queue adds (5s for 100,000 keys)
+* Consistent reads
+* Eventual consistency via a Redis backend (this is currently not implemented)
+* A listener based queue interface where a client can request a message rather than messages being pushed down the wire (i.e. 'subscribe' to a queue) (again, not implemented yet)
 
 # {include:file:TODO.md}

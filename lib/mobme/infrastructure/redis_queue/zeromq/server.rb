@@ -1,33 +1,48 @@
 
 require 'ffi-rzmq'
+require 'mobme/infrastructure/redis_queue/zeromq/connection_handler'
 
 module MobME::Infrastructure::RedisQueue::ZeroMQ
   class Server
     def initialize(options = {})
       @queue = MobME::Infrastructure::RedisQueue.queue(options[:backend] || :memory)
-      @socket = options[:socket] || "tcp://127.0.0.1:6091"
+      @socket = options[:socket] || "ipc:///tmp/redis-queue.sock"
       
       EM.synchrony do
         bind
-        route_to_queue
+        listen_to_messages
       end
     end
     
     def bind
-      context = EM::ZeroMQ::Context.new(1)
-      @server = context.bind(ZMQ::REP, @socket)
-      puts "Connected."
+      @context = EM::ZeroMQ::Context.new(1)
+      @server = @context.bind(ZMQ::REP, @socket)
     end
     
-    def route_to_queue
+    def listen_to_messages
       loop do
-        puts "Listening..."
-        handler = EM::Protocols::ZMQConnectionHandler.new(@server)
-        message = handler.recv_msg
+        handler = MobME::Infrastructure::RedisQueue::ZeroMQ::ConnectionHandler.new(@server)
+        message = handler.receive_message
         
-        puts "Sending"
-        handler.send_msg("OK")
+        message = Marshal.load(message) rescue nil
+        
+        queue_return = if message
+          route_to_queue(message)
+        end
+        
+        handler.send_message(Marshal.dump(queue_return))
       end
+    end
+    
+    private
+    def route_to_queue(message)
+      method = method_from_message(message)
+      args = message[1]
+      @queue.send(method, *args)
+    end
+    
+    def method_from_message(message)
+      message[0]
     end
   end
 end

@@ -11,11 +11,18 @@ class MobME::Infrastructure::RedisQueue::Backends::Memory < MobME::Infrastructur
   end
 
   def add(queue, item, metadata = {})
-    dequeue_timestamp, priority = extract_options_from_metadata(metadata)
-    score = score_from_metadata(dequeue_timestamp, priority)
+    metadata = normalize_metadata(metadata)
+    score = score_from_metadata(metadata['dequeue-timestamp'], metadata['priority'])
     
     queues[queue] ||= Containers::CRBTreeMap.new
     queues[queue][score] = serialize_item(item, metadata)
+  end
+  
+  # Adds many items together
+  def add_bulk(queue, items = [])
+    items.each do |item|
+      add(queue, item)
+    end
   end
   
   def remove(queue, &block)
@@ -50,6 +57,8 @@ class MobME::Infrastructure::RedisQueue::Backends::Memory < MobME::Infrastructur
   def empty(queue)
     queues[queue] = nil
     queues[queue] = Containers::CRBTreeMap.new
+    
+    true
   end
   
   def size(queue)

@@ -13,6 +13,7 @@ group :development do
   gem "simplecov-rcov"
   gem "diff-lcs"
   gem "rdiscount"
+	gem "active_support"
 end
 
 group :osx do

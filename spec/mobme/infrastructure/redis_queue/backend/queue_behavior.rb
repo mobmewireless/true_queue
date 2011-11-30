@@ -1,6 +1,8 @@
 
 shared_examples_for "a queue" do
   describe "#add" do
+    before(:each) { queue.empty "queue" }
+    
     it "adds a simple value to a queue" do
       queue.add "queue", 1
     end
@@ -14,9 +16,12 @@ shared_examples_for "a queue" do
         queue.add "queue", "hello", {'priority' => 1}
       end
       
-      it "only accepts priority between 1 and 100" do
-        lambda { queue.add "queue", "hello", {'priority' => 0} }.should raise_error ArgumentError
-        lambda { queue.add "queue", "hello", {'priority' => 101} }.should raise_error ArgumentError
+      it "when invalid, priority is set as 1" do
+        queue.add "queue", "hello", {'priority' => 0}
+        (queue.remove "queue").should == ['hello', {'priority' => 1}]
+        
+        queue.add "queue", "world", {'priority' => 101}
+        (queue.remove "queue").should == ['world', {'priority' => 1}]
       end
     end
     
@@ -24,10 +29,28 @@ shared_examples_for "a queue" do
       it "adds an item with a dequeue timestamp set to the queue" do
         queue.add "queue", "hello", {'dequeue-timestamp' => Time.now + 1}
       end
-      
-      it "only accepts valid Time objects as timestamps" do
-        lambda { queue.add "queue", "hello", {'dequeue-timestamp' => 1} }.should raise_error ArgumentError
+    end
+  end
+  
+  describe "#add_bulk" do
+    before(:each) { queue.empty "queue" }
+    
+    it "can add multiple items passed in to a queue" do
+      items = []
+      100.times do |i|
+        items << i
       end
+      
+      # Now add in bulk
+      queue.add_bulk "queue", items
+      
+      returned_items = []
+      100.times do |i|
+        returned_items << (queue.remove "queue")
+      end
+      
+      # Just check for the items, not the metadata
+      returned_items.map { |item| item[0] }.should == items
     end
   end
   
@@ -73,46 +96,6 @@ shared_examples_for "a queue" do
         (queue.remove "queue").should == nil
         sleep 1
         (queue.remove "queue").should == ["pincer", {'dequeue-timestamp' => future_time.to_s }]
-      end
-    end
-    
-    context "with a block given" do
-      it "passes items into the block" do
-        queue.add "queue", "thrift"
-        queue.remove "queue" do |item|
-          item.should == ["thrift", {}]
-        end
-      end
-      
-      it "passes items with metadata into the block" do
-        queue.add "queue", "pincer", {'priority' => 2}
-        queue.remove "queue" do |item|
-          item.should == ["pincer", {'priority' => 2}]
-        end
-      end
-      
-      it "can reserve items and re-add them when an error occurs" do
-        queue.add "queue", "pincer", {'priority' => 2}
-        queue.add "queue", "thrift", {'priority' => 1}
-        
-        # Make an exception here
-        lambda do
-          queue.remove "queue" do |item|
-            1 / 0
-          end
-        end.should raise_error ZeroDivisionError
-        (queue.peek "queue").should == ["pincer", {'priority' => 2}]
-      end
-      
-      it "can reserve items and re-add them when a manual abort is triggered" do
-        queue.add "queue", "pincer", {'priority' => 2}
-        queue.add "queue", "thrift", {'priority' => 1}
-        
-        # Manually abort the operation here
-        queue.remove "queue" do |item|
-          raise MobME::Infrastructure::RedisQueue::RemoveAbort
-        end
-        (queue.peek "queue").should == ["pincer", {'priority' => 2}]
       end
     end
   end

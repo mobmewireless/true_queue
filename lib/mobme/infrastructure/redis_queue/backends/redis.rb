@@ -44,14 +44,44 @@ class MobME::Infrastructure::RedisQueue::Backends::Redis < MobME::Infrastructure
   def add(queue, item, metadata = {})
     raise ArgumentError, "Metadata must be a hash, but #{metadata.class} given" unless metadata.is_a? Hash
 
-    dequeue_timestamp, priority = extract_options_from_metadata(metadata)
+    metadata = normalize_metadata(metadata)
     uuid = generate_uuid(queue)
     
     add_to_queueset(queue)
-    add_to_queue(queue, uuid, dequeue_timestamp, priority)
+    add_to_queue(queue, uuid, metadata['dequeue-timestamp'], metadata['priority'])
     write_value(queue, uuid, item, metadata)
     
     uuid
+  end
+  
+  # Add values to the queue in bulk
+  # This works by pipelining writes to Redis, so results are generally much faster
+  # @param [String] queue The queue name to add to
+  # @param [Array] items The items to add
+  def add_bulk(queue, items = [])
+    metadata = {}
+    
+    # UUIDs have to be in sync!
+    uuids = []
+    items.each do |item|
+      uuids << generate_uuid(queue)
+    end
+    
+    add_to_queueset(queue)
+    
+    @redis.pipelined do
+      items.each do |item|
+        uuid = uuids.shift
+        
+        # add to queue
+        queue_key = NAMESPACE + queue.to_s + QUEUE_SUFFIX 
+        @redis.zadd queue_key, score_from_metadata(metadata['dequeue_timestamp'], metadata['priority']), uuid
+        
+        # write value
+        value_hash = "#{NAMESPACE}#{queue}#{VALUE_SUFFIX}"
+        @redis.hset value_hash, uuid, serialize_item(item, metadata)
+      end
+    end
   end
 
   # Remove an item from a queue.
@@ -191,8 +221,8 @@ class MobME::Infrastructure::RedisQueue::Backends::Redis < MobME::Infrastructure
   def put_back_in_queue(queue, uuid, queue_item)
     # Put the item back in the queue
     metadata = queue_item[1]
-    dequeue_timestamp, priority = extract_options_from_metadata(metadata)
-    add_to_queue(queue, uuid, dequeue_timestamp, priority)
+    metadata = normalize_metadata(metadata)
+    add_to_queue(queue, uuid, metadata['dequeue_timestamp'], metadata['priority'])
   end
   
   def write_value(queue, uuid, item, metadata)

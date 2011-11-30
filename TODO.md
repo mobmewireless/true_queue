@@ -1,10 +1,16 @@
 
 ## TODO
-* Write a ØMQ and eventmachine based message queue to persist in Redis in the background too.
+* Tweak the ØMQ based queue server.
+  * Create a redis based consistency backend server for zeromq.
+    * The backend server will request the memory server for updates.
+  * On load, the server should reload the queues from redis.
 * selectively tweak a queue (remove or edit items with a specified lkey from a queue)
 * write implementation tests and split tests into behavior and implementation.
 
 ## CHANGES
+
+### 20111130 (vishnu@mobme.in)
+* An experimental zeromq backend and queue server.
 
 ### 20111128 (vishnu@mobme.in)
 * Modularizing the code so that we can now use multiple backends.

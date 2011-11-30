@@ -5,7 +5,6 @@ module MobME::Infrastructure::RedisQueue
 end
 
 class MobME::Infrastructure::RedisQueue::Backend
-
 protected
   def score_from_metadata(dequeue_timestamp, priority)
     if dequeue_timestamp
@@ -15,20 +14,23 @@ protected
     end
   end
   
-  def extract_options_from_metadata(metadata)
-    if dequeue_timestamp = metadata['dequeue-timestamp']
+  def normalize_metadata(metadata)
+    dequeue_timestamp = metadata['dequeue-timestamp']
+    if dequeue_timestamp
       unless dequeue_timestamp.is_a? Time
-        raise ArgumentError, "dequeue-timestamp must be an instance of Time, but #{dequeue_timestamp.class} given"
+        metadata['dequeue-timestamp'] = Time.now
       end
     end
 
-    if priority = metadata['priority']
-      unless (priority.is_a? Integer) && priority.between?(1, 100)
-        raise ArgumentError, "priority must be an Integer between 1 and 100, but #{priority.class} given"
+    priority = metadata['priority']
+    if priority
+      priority = priority.to_i
+      unless priority.between?(1, 100)
+        metadata['priority'] = 1
       end
     end
     
-    [dequeue_timestamp, priority]
+    metadata
   end
   
   def serialize_item(item, metadata)
