@@ -5,7 +5,7 @@ require 'mobme/infrastructure/redis_queue/zeromq/connection_handler'
 
 class MobME::Infrastructure::RedisQueue::Backends::ZeroMQ < MobME::Infrastructure::RedisQueue::Backend
   def initialize(options = {})
-    @socket = options[:socket] || "ipc:///tmp/redis-queue.sock"
+    @socket = options[:socket] || "ipc:///tmp/mobme-infrastructure-queue-messages.sock"
     connect
   end
   
