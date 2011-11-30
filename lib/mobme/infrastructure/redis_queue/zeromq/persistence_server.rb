@@ -2,6 +2,7 @@
 require 'ffi-rzmq'
 require 'mobme/infrastructure/redis_queue/zeromq/connection_handler'
 require 'redis/connection/synchrony'
+require 'digest/sha1'
 
 module MobME::Infrastructure::RedisQueue::ZeroMQ
   class PersistenceServer
@@ -26,18 +27,27 @@ module MobME::Infrastructure::RedisQueue::ZeroMQ
       loop do
         handler = MobME::Infrastructure::RedisQueue::ZeroMQ::ConnectionHandler.new(@persistence_request_server)
         handler.send_message Marshal.dump("BACKLOG")
-        
-        puts "Sent message"
+        puts "Sent BACKLOG"
         
         messages = handler.receive_message
         messages = Marshal.load(messages) rescue nil
         
-        queue_return = case messages
+        case messages
         when nil
         when false
         else
-          messages.each do |message|
-            route_to_queue(message)
+          unless messages.empty?
+            messages.each do |message|
+              route_to_queue(message)
+            end
+      
+            backlog_signature = message_backlog_signature(messages)
+            handler.send_message Marshal.dump("ACK #{backlog_signature}")
+            puts "Sent ACK #{backlog_signature}"
+      
+            message = handler.receive_message
+            message = Marshal.load(message) rescue nil
+            puts "ACK OK"
           end
         end
         
@@ -65,6 +75,10 @@ module MobME::Infrastructure::RedisQueue::ZeroMQ
     
     def arguments_from_message(message)
       message[1]
+    end
+    
+    def message_backlog_signature(message_backlog)
+      Digest::SHA1.hexdigest(Marshal.dump(message_backlog))
     end
   end
 end

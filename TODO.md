@@ -1,13 +1,22 @@
 
 ## TODO
-* Tweak the ØMQ based queue server.
-  * Create a redis based consistency backend server for zeromq.
-    * The backend server will request the memory server for updates.
+* Tweak the ØMQ based persistence server.
+  * Investigate using *list* for persistence instead of wiring across updates ala replication.
   * On load, the server should reload the queues from redis.
+  * Why redis? Why not a clean dump, maybe using kyotocabinet?
 * selectively tweak a queue (remove or edit items with a specified lkey from a queue)
 * write implementation tests and split tests into behavior and implementation.
 
 ## CHANGES
+
+### 20111201 (vishnu@mobme.in)
+* A persistence server for the zeromq queue based on redis
+  * The persistence server requests backlogs from the memory queue and 
+    stores updates in Redis
+  * The persistence server sents an ACK for a backlog which says Redis
+    processing has been successful.
+* The memory queue maintains a backlog of updates for which it hasn't received
+  an ACK.
 
 ### 20111130 (vishnu@mobme.in)
 * An experimental zeromq backend and queue server.
