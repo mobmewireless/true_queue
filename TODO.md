@@ -1,9 +1,14 @@
 
 ## TODO
-* Tweak the ØMQ based persistence server.
-  * Investigate using *list* for persistence instead of wiring across updates ala replication.
-  * On load, the server should reload the queues from redis.
-  * Why redis? Why not a clean dump, maybe using kyotocabinet?
+* zeromq-memory-queue:
+  * should store last ACK-ed at
+  * should expose a method to get at its stats
+    * read/s
+    * write/s
+    * transactions/s
+    * queue lengths
+    * memory used
+    * last ACK received time
 * selectively tweak a queue (remove or edit items with a specified lkey from a queue)
 * write implementation tests and split tests into behavior and implementation.
 

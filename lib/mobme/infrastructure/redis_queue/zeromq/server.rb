@@ -9,8 +9,6 @@ module MobME::Infrastructure::RedisQueue::ZeroMQ
       @queue = MobME::Infrastructure::RedisQueue.queue(:memory)
       @messages_socket = options[:messages_socket] || "ipc:///tmp/mobme-infrastructure-queue-messages.sock"
       @persistence_socket = options[:persistence_socket] || "ipc:///tmp/mobme-infrastructure-queue-persistence.sock"
-      @message_backlog = []
-      @message_backlogs_waiting_ack = {}
       
       EM.synchrony do
         bind
@@ -35,7 +33,6 @@ module MobME::Infrastructure::RedisQueue::ZeroMQ
         message = Marshal.load(message) rescue nil
         
         queue_return = if message
-          store_message_backlog(message)
           route_to_queue(message)
         end
         
@@ -52,24 +49,14 @@ module MobME::Infrastructure::RedisQueue::ZeroMQ
         message = Marshal.load(message) rescue nil
       
         queue_return = if message == "BACKLOG"
-          if @message_backlog.empty?
-            nil
-          else
-            add_message_backlog_to_waiting_ack(@message_backlog)
-            @message_backlog.dup
-          end
+          queues_snapshot
         elsif ack_message?(message)
-          ack_siganture = signature_from_ack_message(message)
-          
-          puts "Got Ack Signature: #{ack_siganture}"
-          remove_status = remove_message_backlog_from_waiting_ack(ack_siganture)
-          puts "#{@message_backlogs_waiting_ack.length} waiting in backlog ack queue"
+          puts "Got ACK: #{signature_from_ack_message(message)}"
           true
         else
           false
         end
         
-        @message_backlog = []
         @persistence_reply_server.handler.send_message(Marshal.dump(queue_return))
       end
     end
@@ -86,8 +73,14 @@ module MobME::Infrastructure::RedisQueue::ZeroMQ
       end
     end
     
-    def store_message_backlog(message)
-      @message_backlog << message
+    def queues_snapshot
+      snapshot = {}
+      queues = @queue.list_queues
+      queues.each do |queue|
+        snapshot[queue] = @queue.list queue
+      end
+      
+      snapshot
     end
     
     def method_from_message(message)
@@ -104,19 +97,6 @@ module MobME::Infrastructure::RedisQueue::ZeroMQ
     
     def signature_from_ack_message(message)
       message.match(/^ACK (.*)/).to_a[1]
-    end
-    
-    def add_message_backlog_to_waiting_ack(message_backlog)
-      backlog_signature = message_backlog_signature(message_backlog)
-      @message_backlogs_waiting_ack[backlog_signature] = message_backlog.dup
-    end
-    
-    def remove_message_backlog_from_waiting_ack(backlog_signature)
-      @message_backlogs_waiting_ack.delete(backlog_signature)
-    end
-    
-    def message_backlog_signature(message_backlog)
-      Digest::SHA1.hexdigest(Marshal.dump(message_backlog))
     end
   end
 end

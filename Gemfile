@@ -32,5 +32,3 @@ gem "yajl-ruby"
 gem "algorithms"
 gem 'em-synchrony'
 gem 'em-zeromq'
-
-
