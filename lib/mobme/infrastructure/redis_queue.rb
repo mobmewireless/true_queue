@@ -13,6 +13,8 @@ module MobME
           MobME::Infrastructure::RedisQueue::Backends::Redis.new(options)
         when :zeromq
           MobME::Infrastructure::RedisQueue::Backends::ZeroMQ.new(options)
+        when :amqp
+          MobME::Infrastructure::RedisQueue::Backends::AMQP.new(options)
         end
       end
     end
@@ -25,4 +27,4 @@ require_relative 'redis_queue/backend'
 require_relative 'redis_queue/backends/redis'
 require_relative 'redis_queue/backends/memory'
 require_relative 'redis_queue/backends/zeromq'
-
+require_relative 'redis_queue/backends/amqp'

@@ -4,7 +4,7 @@ module MobME::Infrastructure::RedisQueue
   end
 end
 
-class MobME::Infrastructure::RedisQueue::Backend
+class MobME::Infrastructure::RedisQueue::Backend  
 protected
   def score_from_metadata(dequeue_timestamp, priority)
     if dequeue_timestamp

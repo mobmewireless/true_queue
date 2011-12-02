@@ -30,5 +30,6 @@ gem "hiredis", "~> 0.3.1"
 gem "redis", "~> 2.2.0", :require => ["redis/connection/hiredis", "redis"]
 gem "yajl-ruby"
 gem "algorithms"
-gem 'em-synchrony'
-gem 'em-zeromq'
+gem "em-synchrony"
+gem "em-zeromq"
+gem "bunny", "~> 0.7.4"
