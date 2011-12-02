@@ -2,9 +2,6 @@ GEM
   remote: http://gems.mobme.in/
   remote: http://rubygems.org/
   specs:
-    active_support (3.0.0)
-      activesupport (= 3.0.0)
-    activesupport (3.0.0)
     algorithms (0.3.0)
     builder (3.0.0)
     bunny (0.7.8)
@@ -63,7 +60,6 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  active_support
   algorithms
   bunny (~> 0.7.4)
   ci_reporter

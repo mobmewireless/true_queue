@@ -23,15 +23,20 @@ Ruby version 1.9.2
 
 For the in-memory backend that only stores keys within a process space,
 
-    redis_queue = MobME::Infrastructure::RedisQueue.queue(:memory)
+    redis_queue = MobME::Infrastructure::RedisQueue.queue(:memory, options = {})
 
 For the redis backend,
 
-    redis_queue = MobME::Infrastructure::RedisQueue.queue(:redis)
+    redis_queue = MobME::Infrastructure::RedisQueue.queue(:redis, options = {})
     
-& for the zeromq backend,
+For the zeromq backend,
   
-    redis_queue = MobME::Infrastructure::RedisQueue.queue(:zeromq)
+    redis_queue = MobME::Infrastructure::RedisQueue.queue(:zeromq, options = {})
+    
+& for the AMQP backend using bunny,
+
+    redis_queue = MobME::Infrastructure::RedisQueue.queue(:amqp, options = {})
+
     
 All three have exactly the same public interfaces.
 
@@ -54,6 +59,8 @@ Another special metadata keyword is priority.
     redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'priority' => 5})
 
 Items with priority set (or a higher priority) are always dequeued first.
+
+Note that the AMQP backend doesn't support priorities or the dequeue timestamp.
 
 ### Remove an item
 
@@ -82,13 +89,15 @@ Inside a block, you can also manually raise {MobME::Infrastructure::RedisQueueRe
       raise MobME::Infrastructure::RedisQueue::RemoveAbort
     end
     
-Note: you cannot pass in a block using the zeromq type of queue.
+Note: you cannot pass in a block using the zeromq or amqp queue types.
     
 ### List all items in a queue
 
 This is an expensive operation, but at times, very useful!
 
     redis_queue.list
+
+This is not supported for the amqp queue type.
 
 ### List available queues
 
@@ -133,5 +142,11 @@ The zeromq backend is currently experimental. It's meant to do these things:
 * Consistent reads
 * Eventual consistency via a Redis backend (this is currently not implemented)
 * A listener based queue interface where a client can request a message rather than messages being pushed down the wire (i.e. 'subscribe' to a queue) (again, not implemented yet)
+
+### The AMQP Backend
+
+The amqp backend uses the excellent bunny gem to connect to RabbitMQ.
+
+This is slightly slower than the Redis backend: 200,000 values read-write in around 1m30s (~2K/s read-write)
 
 # {include:file:TODO.md}

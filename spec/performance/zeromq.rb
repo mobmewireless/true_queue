@@ -10,7 +10,6 @@
 $:.push(File.expand_path(File.dirname(__FILE__) + "/../../lib"))
 
 require "em-synchrony"
-require "active_support/core_ext/array"
 require_relative "../spec_helper"
 
 EM.synchrony do
