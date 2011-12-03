@@ -14,6 +14,9 @@
 
 ## CHANGES
 
+### 20111203 (vishnu@mobme.in)
+* Renaming redis_queue to queue
+
 ### 20111201 (vishnu@mobme.in)
 * A persistence server for the zeromq queue based on redis
   * The persistence server requests backlogs from the memory queue and 

@@ -1,13 +1,35 @@
 
 ## Overview
-Redis Queue is a simple (under 200sloc) but complete queueing system built on top of Redis. It can both schedule and prioritise queued items.
+Queue is a proxy to multiple queueing backends.
 
-Queues are created when values are added to it. All input is encoded into JSON when stored and decoded when dequeued.
+The most important backend is probably the Redis backend which is a homegrown set of operations over Redis hashes and sorted sets that provides:
+
+* A fast in-memory queue, with constant backups to disk.
+* Atomic add and remove operations
+* An inspectable queue: you can see what's in the queue or peek into the head of the queue without changing it.
+* A reservable remove, where if the client quits halfway, the item is put back in.
+* Priority queues
+* And delayed retrieval for items, you can set a timestamp only after which the entries are slated for removal.
+
+There are other backends as well: 
+
+memory: a simple in-process memory queue using a sorted set
+zermoq: an experimental backend built on zeromq (see bin/zeromq-memory-queue.rb)
+amqp: an AMQP backend to work with RabbitMQ
+
+There are a set of uniform conventions regardless of the queue backend used:
+
+* Queues are created when values are added to it. All input is encoded into JSON when stored and decoded when dequeued.
+* When a queue is empty, nil is returned on remove
+* There are always 9 standard methods: add, add\_bulk, remove, peek, list, empty, size, remove\_queues, list_queues.
+
+Certain features (for e.g. a reservable remove) might not be available on all queue backends.
 
 ## Dependencies
 
-Redis version 2.4.2 or higher
-Ruby version 1.9.2
+Ruby version 1.9.2p290
+
+All other dependencies are in the gemspec
 
 ## Install
 
@@ -23,40 +45,37 @@ Ruby version 1.9.2
 
 For the in-memory backend that only stores keys within a process space,
 
-    redis_queue = MobME::Infrastructure::RedisQueue.queue(:memory, options = {})
-
-For the redis backend,
-
-    redis_queue = MobME::Infrastructure::RedisQueue.queue(:redis, options = {})
-    
-For the zeromq backend,
-  
-    redis_queue = MobME::Infrastructure::RedisQueue.queue(:zeromq, options = {})
-    
+    queue = MobME::Infrastructure::Queue.queue(:memory, options = {})
+                                   
+For the redis backend,             
+                                   
+    queue = MobME::Infrastructure::Queue.queue(:redis, options = {})
+                                   
+For the zeromq backend,            
+                                   
+    queue = MobME::Infrastructure::Queue.queue(:zeromq, options = {})
+                                   
 & for the AMQP backend using bunny,
-
-    redis_queue = MobME::Infrastructure::RedisQueue.queue(:amqp, options = {})
-
-    
-All three have exactly the same public interfaces.
+                                   
+    queue = MobME::Infrastructure::Queue.queue(:amqp, options = {})
 
 ### Add an item
 
-    redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' })
+    queue.add("publish", {:jobid => 23, :url => 'http://example.com/' })
     
 Items can also have arbitrary metadata. They are stored alongside items and returned on a dequeue. 
 
-    redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'importance' => low})
+    queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'importance' => low})
 
 Certain metadata have special meaning. If you set a dequeue-timestamp to a Time object, the item will only be dequeued *after* that time. Note that it won't be dequeued exactly *at* the time, but at any time afterwards.
 
     # only dequeue 5s after queueing
-    redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'dequeue-timestamp' => Time.now + 5 })
+    queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'dequeue-timestamp' => Time.now + 5 })
 
 Another special metadata keyword is priority.
 
     # priority is an integer from 1 to 100. Higher priority items are dequeued first.
-    redis_queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'priority' => 5})
+    queue.add("publish", {:jobid => 23, :url => 'http://example.com/' }, {'priority' => 5})
 
 Items with priority set (or a higher priority) are always dequeued first.
 
@@ -65,7 +84,7 @@ Note that the AMQP backend doesn't support priorities or the dequeue timestamp.
 ### Remove an item
 
     # dequeue
-    redis_queue.remove("publish")
+    queue.remove("publish")
     
 \#remove returns an array. The first element is the Ruby object in the queue, the second is the associated metadata (always a Hash).
 
@@ -74,19 +93,19 @@ Note that the AMQP backend doesn't support priorities or the dequeue timestamp.
 \#remove also can take a block. This is the recommended way to remove an item from a queue.
 
     # dequeue into a block
-    redis_queue.remove do |item|
+    queue.remove do |item|
       #process item
       ...
     end
     
-When a block is passed, RedisQueue ensures that the item is put back in case of an error within the block.
+When a block is passed, Queue ensures that the item is put back in case of an error within the block.
 
-Inside a block, you can also manually raise {MobME::Infrastructure::RedisQueueRemoveAbort} to put back the item:
+Inside a block, you can also manually raise {MobME::Infrastructure::QueueRemoveAbort} to put back the item:
 
     # dequeue into a block
-    redis_queue.remove do |item|
+    queue.remove do |item|
       #this item will be put back
-      raise MobME::Infrastructure::RedisQueue::RemoveAbort
+      raise MobME::Infrastructure::Queue::RemoveAbort
     end
     
 Note: you cannot pass in a block using the zeromq or amqp queue types.
@@ -95,13 +114,13 @@ Note: you cannot pass in a block using the zeromq or amqp queue types.
 
 This is an expensive operation, but at times, very useful!
 
-    redis_queue.list
+    queue.list "queue"
 
 This is not supported for the amqp queue type.
 
 ### List available queues
 
-    redis_queue.list_queues
+    queue.list_queues
 
 Returns an array of all queues stored in the Redis instance.
 
@@ -109,12 +128,12 @@ Returns an array of all queues stored in the Redis instance.
 
 This empties and removes all queues:
 
-    redis_queue.remove_queues
+    queue.remove_queues
 
 To selectively remove queues:
 
-    redis_queue.remove_queue "queue1"
-    redis_queue.remove_queues "queue1", "queue2"
+    queue.remove_queue "queue1"
+    queue.remove_queues "queue1", "queue2"
 
 ## Performance & Memory Usage
 
@@ -140,8 +159,8 @@ The zeromq backend is currently experimental. It's meant to do these things:
 
 * Very fast queue adds (5s for 100,000 keys)
 * Consistent reads
-* Eventual consistency via a Redis backend (this is currently not implemented)
-* A listener based queue interface where a client can request a message rather than messages being pushed down the wire (i.e. 'subscribe' to a queue) (again, not implemented yet)
+* Eventual consistency via a persistence server
+* A listener based queue interface where a client can request a message rather than messages being pushed down the wire (i.e. 'subscribe' to a queue) (not implemented yet)
 
 ### The AMQP Backend
 

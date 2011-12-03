@@ -1,13 +1,13 @@
 
 Gem::Specification.new do |s|
-  s.name        = "mobme-infrastructure-redis-queue"
-  s.version     = "0.9"
+  s.name        = "mobme-infrastructure-queue"
+  s.version     = "0.9.1"
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["Vishnu Gopal"]
   s.email       = ["vishnu@mobme.in"]
   s.homepage    = "http://www.mobme.in/"
-  s.summary     = "A simple but complete queueing system built on top of Redis"
-  s.description = "Redis Queue is a simple (under 200sloc) but complete queueing system built on top of Redis. It can both schedule and prioritise queued items."
+  s.summary     = "A simple proxy to various queues"
+  s.description = "Queue is a proxy to several queueing libraries: a homegrown queue on top of Redis, an in-process memory queue, an experimental zeromq backend and AMQP"
  
   s.required_rubygems_version = ">= 1.3.6"
  
