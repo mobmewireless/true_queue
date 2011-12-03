@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
  
   s.add_development_dependency "rspec"
   s.add_development_dependency "simplecov"
-  s.add_development_dependecy "rdiscount"
+  s.add_development_dependency "rdiscount"
 
   s.add_dependency "yajl-ruby"
   s.add_dependency "hi-redis"
