@@ -1,0 +1,9 @@
+vendor/
+doc/
+.bundle/
+coverage/
+spec/reports
+*.log
+.yardoc
+*.gem
+*.swp
