@@ -1,12 +1,12 @@
 
 require 'ffi-rzmq'
-require 'mobme/infrastructure/redis_queue/zeromq/connection_handler'
+require 'mobme/infrastructure/queue/zeromq/connection_handler'
 require 'digest/sha1'
 
-module MobME::Infrastructure::RedisQueue::ZeroMQ
+module MobME::Infrastructure::Queue::ZeroMQ
   class Server
     def initialize(options = {})
-      @queue = MobME::Infrastructure::RedisQueue.queue(:memory)
+      @queue = MobME::Infrastructure::Queue.queue(:memory)
       @messages_socket = options[:messages_socket] || "ipc:///tmp/mobme-infrastructure-queue-messages.sock"
       @persistence_socket = options[:persistence_socket] || "ipc:///tmp/mobme-infrastructure-queue-persistence.sock"
       
@@ -27,7 +27,7 @@ module MobME::Infrastructure::RedisQueue::ZeroMQ
     
     def listen_to_messages
       loop do
-        handler = MobME::Infrastructure::RedisQueue::ZeroMQ::ConnectionHandler.new(@messages_reply_server)
+        handler = MobME::Infrastructure::Queue::ZeroMQ::ConnectionHandler.new(@messages_reply_server)
         message = @messages_reply_server.handler.receive_message
         
         message = Marshal.load(message) rescue nil
@@ -42,7 +42,7 @@ module MobME::Infrastructure::RedisQueue::ZeroMQ
     
     def listen_to_backlog_requests
       loop do
-        handler = MobME::Infrastructure::RedisQueue::ZeroMQ::ConnectionHandler.new(@persistence_reply_server)
+        handler = MobME::Infrastructure::Queue::ZeroMQ::ConnectionHandler.new(@persistence_reply_server)
         message = @persistence_reply_server.handler.receive_message
         
         

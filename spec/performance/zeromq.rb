@@ -13,7 +13,7 @@ require "em-synchrony"
 require_relative "../spec_helper"
 
 EM.synchrony do
-  queue = MobME::Infrastructure::RedisQueue.queue(:zeromq)
+  queue = MobME::Infrastructure::Queue.queue(:zeromq)
   count = ARGV[0] || 100_000
   
   # This is the simple add:

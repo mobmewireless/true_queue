@@ -1,10 +1,10 @@
 
-module MobME::Infrastructure::RedisQueue
+module MobME::Infrastructure::Queue
   module Backends
   end
 end
 
-class MobME::Infrastructure::RedisQueue::Backend  
+class MobME::Infrastructure::Queue::Backend  
 protected
   def score_from_metadata(dequeue_timestamp, priority)
     if dequeue_timestamp

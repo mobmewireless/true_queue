@@ -8,5 +8,5 @@ SimpleCov.start do
   add_filter "spec"
 end if ENV["COVERAGE"]
 
-require 'mobme/infrastructure/redis_queue'
+require 'mobme/infrastructure/queue'
 require 'date'

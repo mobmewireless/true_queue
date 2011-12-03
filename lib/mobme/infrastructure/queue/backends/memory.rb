@@ -1,10 +1,10 @@
 
 require "algorithms"
 
-class MobME::Infrastructure::RedisQueue::Backends::Memory < MobME::Infrastructure::RedisQueue::Backend
+class MobME::Infrastructure::Queue::Backends::Memory < MobME::Infrastructure::Queue::Backend
   attr_accessor :scores, :queues
 
-  # Initialises the RedisQueue
+  # Initialises the Queue
   # @param [Hash] options all options to pass to the queue
   def initialize(options = {})
     @queues = {}
@@ -34,7 +34,7 @@ class MobME::Infrastructure::RedisQueue::Backends::Memory < MobME::Infrastructur
     if block_given?
       begin
         block.call(item)
-      rescue MobME::Infrastructure::RedisQueue::RemoveAbort
+      rescue MobME::Infrastructure::Queue::RemoveAbort
         return
       end
       queues[queue].delete(score) if item

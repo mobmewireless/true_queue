@@ -9,7 +9,7 @@ $:.push(File.expand_path(File.dirname(__FILE__) + "/../../lib"))
 
 require_relative "../spec_helper"
 
-queue = MobME::Infrastructure::RedisQueue.queue(:amqp)
+queue = MobME::Infrastructure::Queue.queue(:amqp)
 count = ARGV[0] || 100_000
 
 # add_bulk!

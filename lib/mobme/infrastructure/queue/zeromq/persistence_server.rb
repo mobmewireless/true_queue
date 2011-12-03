@@ -1,14 +1,14 @@
 
 require 'ffi-rzmq'
-require 'mobme/infrastructure/redis_queue/zeromq/connection_handler'
+require 'mobme/infrastructure/queue/zeromq/connection_handler'
 require 'redis/connection/synchrony'
 require 'digest/sha1'
 require 'fileutils'
 
-module MobME::Infrastructure::RedisQueue::ZeroMQ
+module MobME::Infrastructure::Queue::ZeroMQ
   class PersistenceServer
     def initialize(options = {})
-      @queue = MobME::Infrastructure::RedisQueue.queue(:redis)
+      @queue = MobME::Infrastructure::Queue.queue(:redis)
       @persistence_socket = options[:persistence_socket] || "ipc:///tmp/mobme-infrastructure-queue-persistence.sock"
       @persistence_store_path = options[:persistence_store_path] || "/tmp"
       @backlog_interval = options[:backlog_interval] || 10
@@ -29,7 +29,7 @@ module MobME::Infrastructure::RedisQueue::ZeroMQ
     
     def send_backlog_requests
       loop do
-        handler = MobME::Infrastructure::RedisQueue::ZeroMQ::ConnectionHandler.new(@persistence_request_server)
+        handler = MobME::Infrastructure::Queue::ZeroMQ::ConnectionHandler.new(@persistence_request_server)
         handler.send_message Marshal.dump("BACKLOG")
         puts "Sent BACKLOG"
         

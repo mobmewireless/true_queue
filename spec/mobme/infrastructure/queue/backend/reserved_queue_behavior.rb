@@ -34,7 +34,7 @@ shared_examples_for "a reserved queue" do
     
       # Manually abort the operation here
       queue.remove "queue" do |item|
-        raise MobME::Infrastructure::RedisQueue::RemoveAbort
+        raise MobME::Infrastructure::Queue::RemoveAbort
       end
       (queue.peek "queue").should == ["pincer", {'priority' => 2}]
     end

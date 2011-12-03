@@ -1,5 +1,5 @@
 
-require "mobme/infrastructure/redis_queue"
-require "mobme/infrastructure/redis_queue/zeromq/server"
+require "mobme/infrastructure/queue"
+require "mobme/infrastructure/queue/zeromq/server"
 
-server = MobME::Infrastructure::RedisQueue::ZeroMQ::Server.new()
+server = MobME::Infrastructure::Queue::ZeroMQ::Server.new()

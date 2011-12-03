@@ -1,5 +1,5 @@
 
-class MobME::Infrastructure::RedisQueue::Backends::Redis < MobME::Infrastructure::RedisQueue::Backend
+class MobME::Infrastructure::Queue::Backends::Redis < MobME::Infrastructure::Queue::Backend
 
   # The namespace that all redis queue keys live inside Redis
   NAMESPACE = 'redis:queue:'
@@ -16,7 +16,7 @@ class MobME::Infrastructure::RedisQueue::Backends::Redis < MobME::Infrastructure
   # The hash suffix for the hash that stores values of a queue
   VALUE_SUFFIX = ':values'
 
-  # Initialises the RedisQueue
+  # Initialises the Queue
   # @param [Hash] options all options to pass to the queue
   # @option options [Hash] :redis_options is passed on to the underlying Redis client
   def initialize(options = {})
@@ -86,7 +86,7 @@ class MobME::Infrastructure::RedisQueue::Backends::Redis < MobME::Infrastructure
 
   # Remove an item from a queue.
   # When a block is passed, the item is reserved instead and automatically put back in case of an error.
-  # Raise MobME::Infrastructure::RedisQueueRemoveAbort within the block to manually abort the remove.
+  # Raise MobME::Infrastructure::QueueRemoveAbort within the block to manually abort the remove.
   #
   # @param [String] queue_name is the queue name
   # @yield [[Object, Hash]] An optional block that is passed the item being remove alongside metadata.
@@ -99,7 +99,7 @@ class MobME::Infrastructure::RedisQueue::Backends::Redis < MobME::Infrastructure
         # If we're not able to remove the key from the set here, it means that
         # some other thread (or evented operation) has done it before us, so
         # the current remove is invalid and we should retry!
-        raise MobME::Infrastructure::RedisQueue::RemoveConflictException unless remove_from_queue(queue, uuid)
+        raise MobME::Infrastructure::Queue::RemoveConflictException unless remove_from_queue(queue, uuid)
       
         queue_item = read_value(queue, uuid)
         
@@ -113,7 +113,7 @@ class MobME::Infrastructure::RedisQueue::Backends::Redis < MobME::Infrastructure
             
             # And now re-raise the error
             raise
-          rescue MobME::Infrastructure::RedisQueue::RemoveAbort
+          rescue MobME::Infrastructure::Queue::RemoveAbort
             put_back_in_queue(queue, uuid, queue_item)
           end
         else
@@ -123,7 +123,7 @@ class MobME::Infrastructure::RedisQueue::Backends::Redis < MobME::Infrastructure
       else
         nil
       end
-    rescue MobME::Infrastructure::RedisQueue::RemoveConflictException
+    rescue MobME::Infrastructure::Queue::RemoveConflictException
       retry
     end
   end

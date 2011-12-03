@@ -1,5 +1,5 @@
 
-module MobME::Infrastructure::RedisQueue::ZeroMQ
+module MobME::Infrastructure::Queue::ZeroMQ
   class ConnectionHandler
     attr_accessor :request
 

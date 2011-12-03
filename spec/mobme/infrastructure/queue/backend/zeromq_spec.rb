@@ -1,7 +1,7 @@
 require_relative '../../../../spec_helper'
 require_relative 'queue_behavior'
 
-describe MobME::Infrastructure::RedisQueue::Backends::ZeroMQ do
+describe MobME::Infrastructure::Queue::Backends::ZeroMQ do
   around(:each) do |example|
     EM.synchrony do
       example.run
@@ -10,7 +10,7 @@ describe MobME::Infrastructure::RedisQueue::Backends::ZeroMQ do
     end
   end
   
-  let(:queue) { MobME::Infrastructure::RedisQueue.queue(:zeromq) }
+  let(:queue) { MobME::Infrastructure::Queue.queue(:zeromq) }
   
   it_behaves_like "a queue"
 end

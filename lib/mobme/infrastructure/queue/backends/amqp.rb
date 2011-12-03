@@ -1,7 +1,7 @@
 
 require "bunny"
 
-class MobME::Infrastructure::RedisQueue::Backends::AMQP < MobME::Infrastructure::RedisQueue::Backend
+class MobME::Infrastructure::Queue::Backends::AMQP < MobME::Infrastructure::Queue::Backend
   def initialize(options = {})
     @bunny_options = options[:bunny_options] || {}
     @amqp_queues = {}

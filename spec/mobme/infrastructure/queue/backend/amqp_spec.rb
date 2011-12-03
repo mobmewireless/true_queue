@@ -1,9 +1,9 @@
 require_relative '../../../../spec_helper'
 require_relative 'queue_behavior'
 
-describe MobME::Infrastructure::RedisQueue::Backends::AMQP do
+describe MobME::Infrastructure::Queue::Backends::AMQP do
     
-  let(:queue) { MobME::Infrastructure::RedisQueue.queue(:amqp) }
+  let(:queue) { MobME::Infrastructure::Queue.queue(:amqp) }
   
   describe "#add" do
     before(:each) { queue.empty "queue" }

@@ -1,9 +1,9 @@
 
 require 'em-zeromq'
 require 'em-synchrony'
-require 'mobme/infrastructure/redis_queue/zeromq/connection_handler'
+require 'mobme/infrastructure/queue/zeromq/connection_handler'
 
-class MobME::Infrastructure::RedisQueue::Backends::ZeroMQ < MobME::Infrastructure::RedisQueue::Backend
+class MobME::Infrastructure::Queue::Backends::ZeroMQ < MobME::Infrastructure::Queue::Backend
   def initialize(options = {})
     @socket = options[:socket] || "ipc:///tmp/mobme-infrastructure-queue-messages.sock"
     connect
@@ -58,7 +58,7 @@ class MobME::Infrastructure::RedisQueue::Backends::ZeroMQ < MobME::Infrastructur
   private
   def dispatch(method, *args)
     @pool.execute(false) do |connection|
-      handler = MobME::Infrastructure::RedisQueue::ZeroMQ::ConnectionHandler.new(connection)
+      handler = MobME::Infrastructure::Queue::ZeroMQ::ConnectionHandler.new(connection)
     
       message = Marshal.dump([method, args])
     
