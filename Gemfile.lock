@@ -1,3 +1,9 @@
+PATH
+  remote: .
+  specs:
+    mobme-infrastructure-redis-queue (0.9)
+      yajl-ruby
+
 GEM
   remote: http://gems.mobme.in/
   remote: http://rubygems.org/
@@ -72,6 +78,7 @@ DEPENDENCIES
   guard-rspec
   hiredis (~> 0.3.1)
   libnotify
+  mobme-infrastructure-redis-queue!
   rake
   rb-fsevent
   rb-inotify
@@ -80,5 +87,4 @@ DEPENDENCIES
   rspec
   simplecov
   simplecov-rcov
-  yajl-ruby
   yard
