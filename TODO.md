@@ -10,6 +10,8 @@
     * memory used
     * last ACK received time
 * selectively tweak a queue (remove or edit items with a specified lkey from a queue)
+* write tests that checks for contention cases, when we have a lot of queues, queue items and workers.
+* flesh out the tests more for every edge case.
 * write implementation tests and split tests into behavior and implementation.
 
 ## CHANGES
