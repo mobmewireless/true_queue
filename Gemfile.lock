@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    mobme-infrastructure-redis-queue (0.9)
+    mobme-infrastructure-queue (0.9.1)
       yajl-ruby
 
 GEM
@@ -78,7 +78,7 @@ DEPENDENCIES
   guard-rspec
   hiredis (~> 0.3.1)
   libnotify
-  mobme-infrastructure-redis-queue!
+  mobme-infrastructure-queue!
   rake
   rb-fsevent
   rb-inotify

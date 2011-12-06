@@ -1,6 +1,8 @@
 require_relative '../../../../spec_helper'
 require_relative 'queue_behavior'
 
+require 'mobme/infrastructure/queue/backends/zeromq'
+
 describe MobME::Infrastructure::Queue::Backends::ZeroMQ do
   around(:each) do |example|
     EM.synchrony do

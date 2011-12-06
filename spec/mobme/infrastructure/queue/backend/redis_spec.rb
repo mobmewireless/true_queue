@@ -4,6 +4,8 @@ require_relative 'reserved_queue_behavior'
 
 puts "Specs require a Redis client running on the default port."
 
+require 'mobme/infrastructure/queue/backends/redis'
+
 describe MobME::Infrastructure::Queue::Backends::Redis do
   let(:queue) { MobME::Infrastructure::Queue.queue(:redis) }
   

@@ -1,7 +1,12 @@
 
 require 'ffi-rzmq'
-require 'mobme/infrastructure/queue/zeromq/connection_handler'
 require 'digest/sha1'
+
+require 'mobme/infrastructure/queue'
+require 'mobme/infrastructure/queue/zeromq/connection_handler'
+
+require 'em-synchrony'
+require 'em-zeromq'
 
 module MobME::Infrastructure::Queue::ZeroMQ
   class Server

@@ -1,5 +1,6 @@
 
 require 'ffi-rzmq'
+require 'mobme/infrastructure/queue'
 require 'mobme/infrastructure/queue/zeromq/connection_handler'
 require 'redis/connection/synchrony'
 require 'digest/sha1'

@@ -1,6 +1,8 @@
 require_relative '../../../../spec_helper'
 require_relative 'queue_behavior'
 
+require 'mobme/infrastructure/queue/backends/amqp'
+
 describe MobME::Infrastructure::Queue::Backends::AMQP do
     
   let(:queue) { MobME::Infrastructure::Queue.queue(:amqp) }
@@ -62,7 +64,7 @@ describe MobME::Infrastructure::Queue::Backends::AMQP do
   describe "#size" do
     before(:each) { queue.empty "queue" }
     
-    it "can look at the first element of a queue without removing it" do
+    it "can return the size of the queue" do
       queue.add "queue", "hello"
       queue.add "queue", "hello2"
       queue.add "queue", "hello2", {'priority' => 3}
