@@ -1,3 +1,4 @@
+require 'redis'
 
 class MobME::Infrastructure::Queue::Backends::Redis < MobME::Infrastructure::Queue::Backend
 

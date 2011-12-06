@@ -1,7 +1,4 @@
-
-require 'redis'
 require 'yajl'
-
 
 module MobME
   module Infrastructure
