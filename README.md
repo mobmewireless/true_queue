@@ -109,7 +109,19 @@ Inside a block, you can also manually raise {MobME::Infrastructure::QueueRemoveA
     end
     
 Note: you cannot pass in a block using the zeromq or amqp queue types.
-    
+
+Another thing to note is that unlike in other queues, **remove does not block and returns nil when the queue is empty**. So you'll have to manually call sleep(delay) and re-poll the queue. This implementation might change in the future:
+
+    loop do	# dequeue into a block
+      queue.remove do |item|
+	  	next unless item
+        #this item will be put back
+        raise MobME::Infrastructure::Queue::RemoveAbort
+      end
+	  
+	  sleep 1
+	end
+	
 ### List all items in a queue
 
 This is an expensive operation, but at times, very useful!
