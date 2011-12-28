@@ -8,3 +8,4 @@ spec/reports
 *.gem
 *.swp
 yardoc
+Gemfile.lock
