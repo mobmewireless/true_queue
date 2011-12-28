@@ -49,8 +49,8 @@ class MobME::Infrastructure::Queue::Backends::Redis < MobME::Infrastructure::Que
     uuid = generate_uuid(queue)
     
     add_to_queueset(queue)
-    add_to_queue(queue, uuid, metadata['dequeue-timestamp'], metadata['priority'])
     write_value(queue, uuid, item, metadata)
+    add_to_queue(queue, uuid, metadata['dequeue-timestamp'], metadata['priority'])
     
     uuid
   end
@@ -73,14 +73,14 @@ class MobME::Infrastructure::Queue::Backends::Redis < MobME::Infrastructure::Que
     @redis.pipelined do
       items.each do |item|
         uuid = uuids.shift
-        
-        # add to queue
-        queue_key = NAMESPACE + queue.to_s + QUEUE_SUFFIX 
-        @redis.zadd queue_key, score_from_metadata(metadata['dequeue_timestamp'], metadata['priority']), uuid
-        
+
         # write value
         value_hash = "#{NAMESPACE}#{queue}#{VALUE_SUFFIX}"
         @redis.hset value_hash, uuid, serialize_item(item, metadata)
+
+        # add to queue
+        queue_key = NAMESPACE + queue.to_s + QUEUE_SUFFIX
+        @redis.zadd queue_key, score_from_metadata(metadata['dequeue_timestamp'], metadata['priority']), uuid
       end
     end
   end
