@@ -49,4 +49,41 @@ describe MobME::Infrastructure::Queue::Backends::Redis do
       end
     end
   end
+
+  describe "Contention Test" do
+    before :each do
+      queue.empty 'testing.parallel.addition.and.removal'
+    end
+
+    it "adds and removes in parallel without losing items" do
+      adders = (1..3).map do |adder_count|
+        Thread.new do
+          (1..(111*adder_count)).each do |x|
+            queue.add('testing.parallel.addition.and.removal', {"value_#{adder_count}" => x})
+          end
+        end
+      end
+
+      removed = {"1" => [], "2" => [], "3" => []}
+
+      removers = (1..2).map do |remover_count|
+        Thread.new do
+          while(removed["1"].count < 111 || removed["2"].count < 222 || removed["3"].count < 333) do
+            queue.remove('testing.parallel.addition.and.removal') do |item|
+              key = item.first.keys.first
+              remove_queue_number = key.split('_').last
+              removed[remove_queue_number] << item
+            end
+          end
+        end
+      end
+
+      adders.each { |adder| adder.join }
+      removers.each { |remover| remover.join }
+
+      removed["1"].uniq.count.should == 111
+      removed["2"].uniq.count.should == 222
+      removed["3"].uniq.count.should == 333
+    end
+  end
 end
