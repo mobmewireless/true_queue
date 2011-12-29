@@ -1,3 +1,4 @@
+#encoding: UTF-8
 
 shared_examples_for "a queue" do
   describe "#add" do
@@ -60,6 +61,12 @@ shared_examples_for "a queue" do
     it "can remove a simple value from the queue" do
       queue.add "queue", 1
       (queue.remove "queue").should == [1, {}]
+    end
+
+    it "removes unicode data correctly" do
+      unicode_string = "മലയാളം हिन्दी தமிழ்"
+      queue.add "queue", unicode_string
+      (queue.remove "queue").should == [unicode_string, {}]
     end
     
     it "should remove nil from an empty queue" do
