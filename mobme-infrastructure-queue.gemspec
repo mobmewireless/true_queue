@@ -1,7 +1,7 @@
 
 Gem::Specification.new do |s|
   s.name        = "mobme-infrastructure-queue"
-  s.version     = "0.9.4"
+  s.version     = "0.9.5"
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["Vishnu Gopal"]
   s.email       = ["vishnu@mobme.in"]

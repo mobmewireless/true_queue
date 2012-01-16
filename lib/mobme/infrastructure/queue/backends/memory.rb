@@ -2,12 +2,16 @@
 require "algorithms"
 
 class MobME::Infrastructure::Queue::Backends::Memory < MobME::Infrastructure::Queue::Backend
-  attr_accessor :scores, :queues
+  attr_accessor :scores
 
   # Initialises the Queue
   # @param [Hash] options all options to pass to the queue
   def initialize(options = {})
-    @queues = {}
+    @@queues ||= {}
+  end
+
+  def queues
+    @@queues
   end
 
   def add(queue, item, metadata = {})
