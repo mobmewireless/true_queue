@@ -36,7 +36,7 @@ All other dependencies are in the gemspec
 
 ## Install
 
-    $ bundle install --path vendor
+    $ gem install true_queue
 
 ## Spec
     
