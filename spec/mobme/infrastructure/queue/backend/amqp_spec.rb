@@ -3,9 +3,9 @@ require_relative 'queue_behavior'
 
 require 'mobme/infrastructure/queue/backends/amqp'
 
-describe MobME::Infrastructure::Queue::Backends::AMQP do
+describe TrueQueue::Backends::AMQP do
     
-  let(:queue) { MobME::Infrastructure::Queue.queue(:amqp) }
+  let(:queue) { TrueQueue.queue(:amqp) }
   
   describe "#add" do
     before(:each) { queue.empty "queue" }

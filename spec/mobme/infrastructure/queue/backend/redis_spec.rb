@@ -6,14 +6,14 @@ puts "Specs require a Redis client running on the default port."
 
 require 'mobme/infrastructure/queue/backends/redis'
 
-describe MobME::Infrastructure::Queue::Backends::Redis do
-  let(:queue) { MobME::Infrastructure::Queue.queue(:redis) }
+describe TrueQueue::Backends::Redis do
+  let(:queue) { TrueQueue.queue(:redis) }
   
   it_behaves_like "a queue"
   it_behaves_like "a reserved queue"
 
   context "in the presence of network delays" do
-    class MobME::Infrastructure::Queue::Backends::Redis
+    class TrueQueue::Backends::Redis
       alias_method :write_value_original, :write_value
     end
 

@@ -1,21 +1,24 @@
 
 ## Overview
-Queue is a proxy to multiple queueing backends.
 
-The most important backend is probably the Redis backend which is a homegrown set of operations over Redis hashes and sorted sets that provides:
+TrueQueue (as in "the one true queue") is a proxy to multiple queueing backends.
+
+The most mature backend is one based on Redis which is a homegrown set of operations over Redis hashes and sorted sets that provides:
 
 * A fast in-memory queue, with constant backups to disk.
 * Atomic add and remove operations
 * An inspectable queue: you can see what's in the queue or peek into the head of the queue without changing it.
 * A reservable remove, where if the client quits halfway, the item is put back in.
 * Priority queues
-* And delayed retrieval for items, you can set a timestamp only after which the entries are slated for removal.
+* And delayed retrieval for items, you can set a timestamp after which the entries are slated for removal.
+
+Not to mention the biggest advantage of all: continue to use your existing Redis install!
 
 There are other backends as well: 
 
-memory: a simple in-process memory queue using a sorted set
-zermoq: an experimental backend built on zeromq (see bin/zeromq-memory-queue.rb)
-amqp: an AMQP backend to work with RabbitMQ
+* memory: a simple in-process memory queue using a sorted set
+* zermoq: an experimental backend built on zeromq (see bin/zeromq-memory-queue.rb)
+* amqp: an AMQP backend to work with RabbitMQ
 
 There are a set of uniform conventions regardless of the queue backend used:
 
@@ -43,25 +46,25 @@ All other dependencies are in the gemspec
 
 ### Connect
 
-For the in-memory backend that only stores keys within a process space,
-
-    queue = MobME::Infrastructure::Queue.queue(:memory, options = {})
-                                   
 For the redis backend,             
                                    
-    queue = MobME::Infrastructure::Queue.queue(:redis, options = {})
+    queue = TrueQueue.queue(:redis, options = { :redis_options => { } })
+
+For the AMQP backend using bunny,
+                                   
+    queue = TrueQueue.queue(:amqp, options = { :bunny_options => { } })
+
+For the in-memory backend that only stores keys within a process space,
+
+    queue = TrueQueue.queue(:memory, options = {})
                                    
 For the zeromq backend,            
                                    
-    queue = MobME::Infrastructure::Queue.queue(:zeromq, options = {})
+    queue = TrueQueue.queue(:zeromq, options = {})
                                    
-& for the AMQP backend using bunny,
-                                   
-    queue = MobME::Infrastructure::Queue.queue(:amqp, options = {})
-
 ### Add an item
 
-    queue.add("publish", {:jobid => 23, :url => 'http://example.com/' })
+    queue.add("queue_name", {:jobid => 23, :url => 'http://example.com/' })
     
 Items can also have arbitrary metadata. They are stored alongside items and returned on a dequeue. 
 
@@ -100,12 +103,12 @@ Note that the AMQP backend doesn't support priorities or the dequeue timestamp.
     
 When a block is passed, Queue ensures that the item is put back in case of an error within the block.
 
-Inside a block, you can also manually raise {MobME::Infrastructure::QueueRemoveAbort} to put back the item:
+Inside a block, you can also manually raise {TrueQueue::RemoveAbort} to put back the item:
 
     # dequeue into a block
     queue.remove do |item|
       #this item will be put back
-      raise MobME::Infrastructure::Queue::RemoveAbort
+      raise TrueQueue::RemoveAbort
     end
     
 Note: you cannot pass in a block using the zeromq or amqp queue types.
@@ -116,7 +119,7 @@ Another thing to note is that unlike in other queues, **remove does not block an
       queue.remove do |item|
 	  	next unless item
         #this item will be put back
-        raise MobME::Infrastructure::Queue::RemoveAbort
+        raise TrueQueue::RemoveAbort
       end
 	  
 	  sleep 1
@@ -159,6 +162,12 @@ An indicative normal workflow performance is 200,000 values stored and retrieved
 
 It's also reasonably memory efficient because it uses hashes instead of plain strings to store values. 200,000 values used 20MB (with each value 10 bytes).
 
+### The AMQP Backend
+
+The amqp backend uses the excellent bunny gem to connect to RabbitMQ.
+
+This is slightly slower than the Redis backend: 200,000 values read-write in around 1m30s (~2K/s read-write)
+
 ### The Memory Backend
 
 The memory backend only stores keys within the process space.
@@ -174,10 +183,3 @@ The zeromq backend is currently experimental. It's meant to do these things:
 * Eventual consistency via a persistence server
 * A listener based queue interface where a client can request a message rather than messages being pushed down the wire (i.e. 'subscribe' to a queue) (not implemented yet)
 
-### The AMQP Backend
-
-The amqp backend uses the excellent bunny gem to connect to RabbitMQ.
-
-This is slightly slower than the Redis backend: 200,000 values read-write in around 1m30s (~2K/s read-write)
-
-# {include:file:TODO.md}

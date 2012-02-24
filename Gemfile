@@ -1,4 +1,3 @@
-source "http://gems.mobme.in"
 source :rubygems
 
 group :osx do

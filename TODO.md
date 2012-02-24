@@ -16,6 +16,9 @@
 
 ## CHANGES
 
+### 20120224 (vishnu@mobme.in)
+* TrueQueue
+
 ### 20111203 (vishnu@mobme.in)
 * Renaming redis_queue to queue
 

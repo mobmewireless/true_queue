@@ -3,7 +3,7 @@ require_relative 'queue_behavior'
 
 require 'mobme/infrastructure/queue/backends/zeromq'
 
-describe MobME::Infrastructure::Queue::Backends::ZeroMQ do
+describe TrueQueue::Backends::ZeroMQ do
   around(:each) do |example|
     EM.synchrony do
       example.run
@@ -12,7 +12,7 @@ describe MobME::Infrastructure::Queue::Backends::ZeroMQ do
     end
   end
   
-  let(:queue) { MobME::Infrastructure::Queue.queue(:zeromq) }
+  let(:queue) { TrueQueue.queue(:zeromq) }
   
   it_behaves_like "a queue"
 end

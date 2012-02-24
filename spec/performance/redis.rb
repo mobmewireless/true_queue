@@ -13,7 +13,7 @@ $:.push(File.expand_path(File.dirname(__FILE__) + "/../../lib"))
 
 require_relative "../spec_helper"
 
-queue = MobME::Infrastructure::Queue.queue(:redis)
+queue = TrueQueue.queue(:redis)
 
 count = ARGV[0] || 100_000
 
