@@ -1,4 +1,6 @@
+require 'hiredis'
 require 'redis'
+require 'redis/connection/hiredis'
 
 class MobME::Infrastructure::Queue::Backends::Redis < MobME::Infrastructure::Queue::Backend
 
