@@ -1,4 +1,3 @@
-
 Gem::Specification.new do |s|
   s.name        = "true_queue"
   s.version     = "0.9.5"
@@ -28,6 +27,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency "em-synchrony"
   s.add_development_dependency "em-zeromq"
   s.add_development_dependency "bunny", "~> 0.7.4"
+  s.add_development_dependency "ci_reporter"
   
   s.add_dependency "yajl-ruby"
  
