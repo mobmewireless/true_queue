@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = "true_queue"
-  s.version     = "0.9.5"
+  s.version     = "0.9.6"
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["Vishnu Gopal"]
   s.email       = ["vishnu@mobme.in"]
